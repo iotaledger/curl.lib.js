@@ -19,6 +19,11 @@ export default class {
       texture: 1
     };
 
+    var vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    this.bindBuffers(gl);
+    gl.bindVertexArray(null);
+    this.vao = vao;
     this.vertexShader = this._createVertexShader(gl);
     this.gl = gl;
   }
@@ -74,6 +79,7 @@ export default class {
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw new Error('turbojs: Failed to link GLSL program code.');
 
+
     var uTexture = gl.getUniformLocation(program, 'u_texture');
     /*
     var aPosition = gl.getAttribLocation(program, 'position');
@@ -103,7 +109,20 @@ export default class {
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.activeTexture(gl.TEXTURE0);
+
+
+    gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
+
+    gl.bindVertexArray(null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
+    return ipt.data.subarray(0, ipt.length);
+  }
+  bindBuffers(gl) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
     gl.enableVertexAttribArray(this.attrib.texture);
     gl.vertexAttribPointer(this.attrib.texture, 2, gl.FLOAT, false, 0, 0);
@@ -111,12 +130,6 @@ export default class {
     gl.enableVertexAttribArray(this.attrib.position);
     gl.vertexAttribPointer(this.attrib.position, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    if(read) {
-      gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
-    }
-    //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
-    return ipt.data.subarray(0, ipt.length);
   }
   static alloc (sz) {
     // A sane limit for most GPUs out there.
