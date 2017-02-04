@@ -4,8 +4,10 @@ import createTexture from './texture'
 import {vertexShaderCode, stdlib} from './shadercode'
 
 export default class {
-  constructor() {
-    var gl = initGL();
+  constructor(dim) {
+    this.gl = initGL();
+    let gl = this.gl;
+    this.dim = dim;
 
     // GPU texture buffer from JS typed array
     this.buffers = {
@@ -19,13 +21,12 @@ export default class {
       texture: 1
     };
 
-    var vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
     this._bindBuffers(gl);
     gl.bindVertexArray(null);
-    this.vao = vao;
     this.vertexShader = this._createVertexShader(gl);
-    this.gl = gl;
+    this.framebuffer = gl.createFramebuffer();
   }
   _createVertexShader(gl) {
     var vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -89,15 +90,28 @@ export default class {
     gl.useProgram(program);
 
     var size = Math.sqrt(ipt.data.length) / 4;
-    var texture = createTexture(gl, ipt.data, dim);
+    var texture = createTexture(gl, ipt.data, this.dim);
 
     //gl.viewport(0, 0, size, size);
-    gl.viewport(0, 0, dim.x, dim.y);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
+    gl.viewport(0, 0, this.dim.x, this.dim.y);
 
+    this._frameBufferSetup(gl, ipt);
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(this.vao);
+    gl.uniform1i(uTexture, 0);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
+    this._finishRun(gl);
+
+    //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
+    return ipt.data.subarray(0, ipt.length);
+  }
+  _frameBufferSetup (gl, ipt) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     // Types arrays speed this up tremendously.
-    var nTexture = createTexture(gl, new Int32Array(ipt.data.length), dim);
-    //var nTexture = createTexture(gl, new Float32Array(ipt.data.length), size);
+    var nTexture = createTexture(gl, new Int32Array(ipt.data.length), this.dim);
 
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
 
@@ -106,19 +120,6 @@ export default class {
 
     if (!frameBufferStatus)
       throw new Error('turbojs: Error attaching float texture to framebuffer. Your device is probably incompatible. Error info: ' + frameBufferStatus.message);
-
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.activeTexture(gl.TEXTURE0);
-
-
-    gl.bindVertexArray(this.vao);
-    gl.uniform1i(uTexture, 0);
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
-
-    this._finishRun(gl);
-    //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
-    return ipt.data.subarray(0, ipt.length);
   }
   _bindBuffers(gl) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);

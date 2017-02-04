@@ -20,7 +20,7 @@ export default class {
   constructor() {
     if(Turbo) {
       this.buf = Turbo.alloc(imageSize);
-      this.turbo = new Turbo();
+      this.turbo = new Turbo(dim);
       this.state = "READY";
       this.findNonce = this._turboFindNonce;
     }
