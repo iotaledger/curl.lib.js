@@ -1,4 +1,4 @@
-import turbo from './gl2c'
+import Turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
 import {k_init, headers, twistMain, barrier, twist, k_transform, increment, k_check} from './kernel'
 
@@ -18,8 +18,9 @@ var pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && 
 
 export default class {
   constructor() {
-    if(turbo) {
-      this.buf = turbo.alloc(imageSize);
+    if(Turbo) {
+      this.buf = Turbo.alloc(imageSize);
+      this.turbo = new Turbo();
       this.state = "READY";
       this.findNonce = this._turboFindNonce;
     }
@@ -45,7 +46,7 @@ export default class {
     this.mwm = minWeightMagnitude;
     this.cb = callback;
 
-    turbo.run(this.buf, dim, k_init, true);
+    this.turbo.run(this.buf, dim, k_init, true);
 
     this._turboOffset();
     requestAnimationFrame(() => {this._turboSearch(callback)});
@@ -80,7 +81,7 @@ export default class {
     var length = (STATE_LENGTH + 1) * texelSize ;
     var index = -1, nonce;
     this.buf.data[length-1] = this.mwm;
-    turbo.run(this.buf, dim, headers + k_check);
+    this.turbo.run(this.buf, dim, headers + k_check);
 
     for(var i = 0; i < dim.y; i++) {
       nonce = this._slowCheck(length, i);
@@ -130,12 +131,12 @@ export default class {
         break;
       }
     }
-    //turbo.run(this.buf, dim, headers + increment);
+    //this.turbo.run(this.buf, dim, headers + increment);
   }
   _turboTransform() {
-    //turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
+    //this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
     for(var i = 0; i < 27; i++) {
-      turbo.run(this.buf, dim, headers + barrier + twist + twistMain, true);
+      this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, true);
     }
   }
 
@@ -153,11 +154,11 @@ export default class {
     console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
     return;
 
-    turbo.run(this.buf, dim, headers + barrier + twistMain);
+    this.turbo.run(this.buf, dim, headers + barrier + twistMain);
     transform(states);
     console.log(states.low.slice(720,728));
     */
-    //turbo.run(this.buf, dim, k_init, false);
+    //this.turbo.run(this.buf, dim, k_init, false);
     //return this._slowCheck() === 0;
     /*
     return this.buf.data[(1 + STATE_LENGTH) * texelSize] == 0;
