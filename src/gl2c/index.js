@@ -105,7 +105,8 @@ export default class {
     }
     this.programs.set(name, program);
   }
-  //run (ipt, dim, code) {
+  use (name) {
+  }
   run (ipt, name) {
     let gl = this.gl;
     let program = this.programs.get(name);
@@ -116,30 +117,21 @@ export default class {
       throw new Error('turbojs: Failed to link GLSL program code.');
 
     var uTexture = gl.getUniformLocation(program, 'u_texture');
-    /*
-    var aPosition = gl.getAttribLocation(program, 'position');
-    var aTexture = gl.getAttribLocation(program, 'texture');
-    */
     gl.useProgram(program);
 
-    var size = Math.sqrt(ipt.data.length) / 4;
     var texture = createTexture(gl, ipt.data, this.dim);
 
-    //gl.viewport(0, 0, size, size);
     gl.viewport(0, 0, this.dim.x, this.dim.y);
-
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
-    console.log("drawing...");
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
-    this._finishRun(gl);
 
-    //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
+    gl.deleteTexture(texture);
+    this._finishRun(gl);
     return ipt.data.subarray(0, ipt.length);
   }
 
