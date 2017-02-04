@@ -47,15 +47,18 @@ export default class {
 
     turbo.run(this.buf, dim, k_init, true);
 
+    this._turboOffset();
     requestAnimationFrame(() => {this._turboSearch(callback)});
   }
 
   _turboSearch(callback) {
-    this._turboIncrement(HASH_LENGTH /3 * 2, HASH_LENGTH, i);
+    for(var i = 0; i < dim.y; i++) {
+      this._turboIncrement(HASH_LENGTH /3 * 2, HASH_LENGTH, i);
+    }
     this._turboTransform();
     var {index, nonce} = this._turboCheck();
     if(index === -1) {
-      //console.log("next");
+      console.log("next");
       requestAnimationFrame(() => {this._turboSearch(callback)});
     } else {
       console.log("wahoo");
@@ -103,7 +106,8 @@ export default class {
   }
 
   _turboOffset() {
-    for(var i = 0; i < dim.y; i++) {
+    for(var i = 1; i < dim.y; i++) {
+      //console.log("offset at: " +i);
       for(var j = i; j < dim.y; j++) {
         this._turboIncrement(HASH_LENGTH/3, (HASH_LENGTH / 3)* 2, j);
       }
