@@ -3,11 +3,25 @@ import newBuffer from './newBuffer'
 import createTexture from './texture'
 import {vertexShaderCode, stdlib} from './shadercode'
 
+  function _frameBufferSetup (gl, fbo, length, dim) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    // Types arrays speed this up tremendously.
+    var nTexture = createTexture(gl, new Int32Array(length), dim);
+
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
+
+    // Test for mobile bug MDN->WebGL_best_practices, bullet 7
+    var frameBufferStatus = (gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE);
+
+    if (!frameBufferStatus)
+      throw new Error('turbojs: Error attaching float texture to framebuffer. Your device is probably incompatible. Error info: ' + frameBufferStatus.message);
+  }
 export default class {
-  constructor(dim) {
+  constructor(length, dim) {
     this.gl = initGL();
     let gl = this.gl;
     this.dim = dim;
+    this.programs = new Map();
 
     // GPU texture buffer from JS typed array
     this.buffers = {
@@ -27,6 +41,16 @@ export default class {
     gl.bindVertexArray(null);
     this.vertexShader = this._createVertexShader(gl);
     this.framebuffer = gl.createFramebuffer();
+    _frameBufferSetup(gl, this.framebuffer, length, this.dim);
+  }
+  _bindBuffers(gl) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
+    gl.enableVertexAttribArray(this.attrib.texture);
+    gl.vertexAttribPointer(this.attrib.texture, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
+    gl.enableVertexAttribArray(this.attrib.position);
+    gl.vertexAttribPointer(this.attrib.position, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
   }
   _createVertexShader(gl) {
     var vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -43,18 +67,12 @@ export default class {
       );
     return vertexShader;
   }
-  run (ipt, dim, code, read) {
-    let gl = this.gl;
-    let vertexShader = this.vertexShader;
+  _createFragmentShader(gl, code) {
     var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
-    gl.shaderSource(
-      fragmentShader,
-      stdlib + code
-    );
+    gl.shaderSource(fragmentShader, stdlib + code);
 
     gl.compileShader(fragmentShader);
-
     // Use this output to debug the shader
     // Keep in mind that WebGL GLSL is **much** stricter than e.g. OpenGL GLSL
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
@@ -68,7 +86,13 @@ export default class {
 
       throw new Error(dbgMsg);
     }
+    return fragmentShader;
+  }
+  addProgram (name, code) {
+    let gl = this.gl;
+    let vertexShader = this.vertexShader;
 
+    var fragmentShader = this._createFragmentShader(this.gl, code);
     var program = gl.createProgram();
 
     gl.attachShader(program, vertexShader);
@@ -76,17 +100,26 @@ export default class {
     gl.bindAttribLocation(program, this.attrib.position, 'position');
     gl.bindAttribLocation(program, this.attrib.texture, 'texture');
     gl.linkProgram(program);
+    if(!!this.programs.get(name)) {
+      console.log("program exists");
+    }
+    this.programs.set(name, program);
+  }
+  //run (ipt, dim, code) {
+  run (ipt, name) {
+    let gl = this.gl;
+    let program = this.programs.get(name);
+    if(program === null)
+      throw new Error("No Such Program!");
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw new Error('turbojs: Failed to link GLSL program code.');
-
 
     var uTexture = gl.getUniformLocation(program, 'u_texture');
     /*
     var aPosition = gl.getAttribLocation(program, 'position');
     var aTexture = gl.getAttribLocation(program, 'texture');
     */
-
     gl.useProgram(program);
 
     var size = Math.sqrt(ipt.data.length) / 4;
@@ -95,12 +128,13 @@ export default class {
     //gl.viewport(0, 0, size, size);
     gl.viewport(0, 0, this.dim.x, this.dim.y);
 
-    this._frameBufferSetup(gl, ipt);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
+    console.log("drawing...");
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
     this._finishRun(gl);
@@ -108,28 +142,7 @@ export default class {
     //gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
     return ipt.data.subarray(0, ipt.length);
   }
-  _frameBufferSetup (gl, ipt) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    // Types arrays speed this up tremendously.
-    var nTexture = createTexture(gl, new Int32Array(ipt.data.length), this.dim);
 
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
-
-    // Test for mobile bug MDN->WebGL_best_practices, bullet 7
-    var frameBufferStatus = (gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE);
-
-    if (!frameBufferStatus)
-      throw new Error('turbojs: Error attaching float texture to framebuffer. Your device is probably incompatible. Error info: ' + frameBufferStatus.message);
-  }
-  _bindBuffers(gl) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
-    gl.enableVertexAttribArray(this.attrib.texture);
-    gl.vertexAttribPointer(this.attrib.texture, 2, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
-    gl.enableVertexAttribArray(this.attrib.position);
-    gl.vertexAttribPointer(this.attrib.position, 2, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
-  }
   _finishRun (gl) {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);

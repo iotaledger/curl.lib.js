@@ -20,9 +20,12 @@ export default class {
   constructor() {
     if(Turbo) {
       this.buf = Turbo.alloc(imageSize);
-      this.turbo = new Turbo(dim);
+      this.turbo = new Turbo(this.buf.data.length, dim);
       this.state = "READY";
       this.findNonce = this._turboFindNonce;
+      this.turbo.addProgram("init", k_init);
+      this.turbo.addProgram("check", headers + k_check);
+      this.turbo.addProgram("twist", headers + barrier + twist + twistMain);
     }
   }
 
@@ -46,7 +49,7 @@ export default class {
     this.mwm = minWeightMagnitude;
     this.cb = callback;
 
-    this.turbo.run(this.buf, dim, k_init, true);
+    this.turbo.run(this.buf, "init");
 
     this._turboOffset();
     requestAnimationFrame(() => {this._turboSearch(callback)});
@@ -59,7 +62,6 @@ export default class {
     this._turboTransform();
     var {index, nonce} = this._turboCheck();
     if(index === -1) {
-      console.log("next");
       requestAnimationFrame(() => {this._turboSearch(callback)});
     } else {
       console.log("wahoo");
@@ -81,7 +83,8 @@ export default class {
     var length = (STATE_LENGTH + 1) * texelSize ;
     var index = -1, nonce;
     this.buf.data[length-1] = this.mwm;
-    this.turbo.run(this.buf, dim, headers + k_check);
+    //this.turbo.run(this.buf, dim, headers + k_check);
+    this.turbo.run(this.buf, "check");
 
     for(var i = 0; i < dim.y; i++) {
       nonce = this._slowCheck(length, i);
@@ -136,7 +139,7 @@ export default class {
   _turboTransform() {
     //this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
     for(var i = 0; i < 27; i++) {
-      this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, true);
+      this.turbo.run(this.buf, "twist");
     }
   }
 
