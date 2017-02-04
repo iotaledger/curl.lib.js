@@ -65,6 +65,8 @@ export default class {
       var length = dim.x*texelSize;
       var start = length*index;
       var end = start + Const.HASH_LENGTH*texelSize;
+      //console.log("index: " + index + " nonce: " + nonce);
+      nonce &= 1 << (31-Math.clz32(nonce));
       console.log("index: " + index + " nonce: " + nonce);
       callback(
         this.buf.data
@@ -148,17 +150,3 @@ export default class {
     }
   }
 }
-    /*
-    console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
-    console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
-    return;
-
-    this.turbo.run(this.buf, dim, headers + barrier + twistMain);
-    transform(states);
-    console.log(states.low.slice(720,728));
-    */
-    //this.turbo.run(this.buf, dim, k_init, false);
-    //return this._slowCheck() === 0;
-    /*
-    return this.buf.data[(1 + Const.STATE_LENGTH) * texelSize] == 0;
-    */
