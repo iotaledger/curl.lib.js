@@ -14,6 +14,11 @@ export default class {
       index    : newBuffer(gl, [  1,  2, 0,  3, 0, 2 ], Uint16Array, gl.ELEMENT_ARRAY_BUFFER)
     };
 
+    this.attrib = {
+      position: 0,
+      texture: 1
+    };
+
     this.vertexShader = this._createVertexShader(gl);
     this.gl = gl;
   }
@@ -62,14 +67,18 @@ export default class {
 
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
+    gl.bindAttribLocation(program, this.attrib.position, 'position');
+    gl.bindAttribLocation(program, this.attrib.texture, 'texture');
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw new Error('turbojs: Failed to link GLSL program code.');
 
     var uTexture = gl.getUniformLocation(program, 'u_texture');
+    /*
     var aPosition = gl.getAttribLocation(program, 'position');
     var aTexture = gl.getAttribLocation(program, 'texture');
+    */
 
     gl.useProgram(program);
 
@@ -96,11 +105,11 @@ export default class {
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(uTexture, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
-    gl.enableVertexAttribArray(aTexture);
-    gl.vertexAttribPointer(aTexture, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.attrib.texture);
+    gl.vertexAttribPointer(this.attrib.texture, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
-    gl.enableVertexAttribArray(aPosition);
-    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.attrib.position);
+    gl.vertexAttribPointer(this.attrib.position, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     if(read) {

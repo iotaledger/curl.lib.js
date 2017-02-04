@@ -1,15 +1,14 @@
 export 
 let vertexShaderCode =
   `#version 300 es
-  in vec2 position;
-in vec2 texture;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 texture;
 out vec2 pos;
 
 void main(void) {
   pos = texture;
   gl_Position = vec4(position.xy, 0.0, 1.0);
 }`,
-
   stdlib =
   `#version 300 es
 precision highp float;
@@ -40,5 +39,4 @@ ivec4 read_at(ivec2 coord) {
 void commit(ivec4 val) {
   color = val;
 }
-
 `
