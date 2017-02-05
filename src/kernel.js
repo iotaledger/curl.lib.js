@@ -8,7 +8,7 @@ export let k_init = `
 void main() {
   init();
   ivec4 i = read();
-  i.a = my_coord.y;
+  //i.a = my_coord.y;
   if(my_coord.y == 0) {
     commit(i);
   } else {
@@ -120,21 +120,21 @@ void main() {
   ivec4 my_vec = read();
   if(my_coord.x == STATE_LENGTH) {
     ivec2 r_texel;
-    int mwm = my_vec.a;
+    int mwm = read_at(ivec2(STATE_LENGTH, 0)).g;//my_vec.a;
     my_vec.a = HIGH_BITS;
     int i;
     for (i = mwm; i-- > 0; ) {
-      r_texel = read_at(ivec2(HASH_LENGTH - 1 - i, my_coord.y)).ba;
+      r_texel = read_at(ivec2(STATE_LENGTH - 1 - i, my_coord.y)).ba;
       my_vec.a &= ~(r_texel.s ^ r_texel.t);
       if (my_vec.a == 0) {
         break;
       }
     }
     //commit(ivec4(my_coord.xy,r_texel.s,my_vec.a));
-    my_vec.b = my_coord.x;
+    my_vec.b = my_coord.y;
+    my_vec.r = mwm;
     commit(my_vec);
   } else {
-    my_vec.b = my_coord.x;
     commit(my_vec);
   }
 }

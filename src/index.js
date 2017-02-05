@@ -9,7 +9,7 @@ import * as Const from './constants'
   var curl =  new Curl();
   curl.initialize(new Int32Array(Const.STATE_LENGTH));
   var pearlDiver = new PearlDiver();
-  var minWeightMagnitude = 3;
+  var minWeightMagnitude = 5;
   var testTrits = new Int32Array(Const.TRANSACTION_LENGTH);
   for(var i=0; i < testTrits.length; i++) testTrits[i] = Math.floor(Math.random() * 3) - 1;
   var start = Date.now();

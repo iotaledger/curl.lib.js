@@ -3,25 +3,39 @@ import newBuffer from './newBuffer'
 import createTexture from './texture'
 import {vertexShaderCode, stdlib} from './shadercode'
 
-  function _frameBufferSetup (gl, fbo, length, dim) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    // Types arrays speed this up tremendously.
-    var nTexture = createTexture(gl, new Int32Array(length), dim);
+function _frameBufferSetup (gl, fbo, length, dim) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  // Types arrays speed this up tremendously.
+  var nTexture = createTexture(gl, new Int32Array(length), dim);
 
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
 
-    // Test for mobile bug MDN->WebGL_best_practices, bullet 7
-    var frameBufferStatus = (gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE);
+  // Test for mobile bug MDN->WebGL_best_practices, bullet 7
+  var frameBufferStatus = (gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE);
 
-    if (!frameBufferStatus)
-      throw new Error('turbojs: Error attaching float texture to framebuffer. Your device is probably incompatible. Error info: ' + frameBufferStatus.message);
-  }
+  if (!frameBufferStatus)
+    throw new Error('turbojs: Error attaching float texture to framebuffer. Your device is probably incompatible. Error info: ' + frameBufferStatus.message);
+}
+function alloc (sz) {
+  // A sane limit for most GPUs out there.
+  // JS falls apart before GLSL limits could ever be reached.
+  if (sz > 16777216)
+    throw new Error("turbojs: Whoops, the maximum array size is exceeded!");
+
+  var ns = Math.pow(Math.pow(2, Math.ceil(Math.log(sz) / 1.386) - 1), 2);
+  return {
+    data : new Int32Array(ns * 16),
+    //data : new Float32Array(ns * 16),
+    length : sz
+  };
+}
 export default class {
   constructor(length, dim) {
     this.gl = initGL();
     let gl = this.gl;
     this.dim = dim;
     this.programs = new Map();
+    this.ipt = alloc(length);
 
     // GPU texture buffer from JS typed array
     this.buffers = {
@@ -42,6 +56,7 @@ export default class {
     this.vertexShader = this._createVertexShader(gl);
     this.framebuffer = gl.createFramebuffer();
     _frameBufferSetup(gl, this.framebuffer, length, this.dim);
+    this.texture = createTexture(gl, this.ipt.data, this.dim);
   }
   _bindBuffers(gl) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
@@ -107,7 +122,7 @@ export default class {
   }
   use (name) {
   }
-  run (ipt, name) {
+  run (name, data) {
     let gl = this.gl;
     let program = this.programs.get(name);
     if(program === null)
@@ -119,20 +134,26 @@ export default class {
     var uTexture = gl.getUniformLocation(program, 'u_texture');
     gl.useProgram(program);
 
-    var texture = createTexture(gl, ipt.data, this.dim);
 
     gl.viewport(0, 0, this.dim.x, this.dim.y);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    if(data != null)
+      this.writeData(data);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
+    gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
 
-    gl.deleteTexture(texture);
+    //gl.deleteTexture(this.texture);
     this._finishRun(gl);
-    return ipt.data.subarray(0, ipt.length);
+    return this.ipt.data.subarray(0, this.ipt.length);
+  }
+
+  writeData(data) {
+    let gl = this.gl;
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I,this.dim.x,this.dim.y, 0, gl.RGBA_INTEGER, gl.INT, data);
   }
 
   _finishRun (gl) {
@@ -140,17 +161,5 @@ export default class {
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
-  static alloc (sz) {
-    // A sane limit for most GPUs out there.
-    // JS falls apart before GLSL limits could ever be reached.
-    if (sz > 16777216)
-      throw new Error("turbojs: Whoops, the maximum array size is exceeded!");
 
-    var ns = Math.pow(Math.pow(2, Math.ceil(Math.log(sz) / 1.386) - 1), 2);
-    return {
-      data : new Int32Array(ns * 16),
-      //data : new Float32Array(ns * 16),
-      length : sz
-    };
-  }
 }
