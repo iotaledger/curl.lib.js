@@ -2,15 +2,15 @@ let HASH_LENGTH = 243,
   TRYTE_LENGTH = 2673,
   STATE_LENGTH= 3 * HASH_LENGTH,
   TRANSACTION_LENGTH= TRYTE_LENGTH * 3,
-  LOW_BITS= 0x00000000,//00000000,
-  HIGH_BITS= ~LOW_BITS,//0xFFFFFFFF,//0xFFFFFFFF,//FFFFFFFF,4294967295, 
+  LOW_BITS= 0,//00000000,
+  HIGH_BITS= -1,//0xFFFFFFFF,//FFFFFFFF,4294967295, 
   LOW_0= 0xDB6DB6DB,//6DB6DB6D,
-  HIGH_0= 0xB6DB6DB6,//DB6DB6DB,
   LOW_1= 0xF1F8FC7E,//3F1F8FC7,
-  HIGH_1= 0x8FC7E3F1,//F8FC7E3F,
   LOW_2= 0x7FFFE00F,//FFFC01FF,
-  HIGH_2= 0xFFC01FFF,//F803FFFF,
   LOW_3= 0xFFC00000,//07FFFFFF,
+  HIGH_0= 0xB6DB6DB6,//DB6DB6DB,
+  HIGH_1= 0x8FC7E3F1,//F8FC7E3F,
+  HIGH_2= 0xFFC01FFF,//F803FFFF,
   HIGH_3= 0x003FFFFF; //FFFFFFFF,
 /*
   HIGH_BITS= 0xFFFFFFFFFFFFFFFF,
@@ -27,13 +27,13 @@ let HASH_LENGTH = 243,
 
 
 function setOffset(states) {
-  states.low[0] = LOW_0;
+  states.low [0] = LOW_0;
+  states.low [1] = LOW_1;
+  states.low [2] = LOW_2;
+  states.low [3] = LOW_3;
   states.high[0] = HIGH_0;
-  states.low[1] = LOW_1;
   states.high[1] = HIGH_1;
-  states.low[2] = LOW_2;
   states.high[2] = HIGH_2;
-  states.low[3] = LOW_3;
   states.high[3] = HIGH_3;
 }
 
@@ -58,8 +58,7 @@ export function transform(states) {
   }
 }
 
-function copyTransactionToStates(states, transactionTrits, offset) {
-  var j;
+function copyHashLength(states, transactionTrits, offset) {
   for (var j = 0; j < HASH_LENGTH; j++) {
     switch (transactionTrits[offset++]) {
       case 0: {
@@ -80,14 +79,13 @@ function copyTransactionToStates(states, transactionTrits, offset) {
 }
 export default function /*searchInit*/(states, transactionTrits) {
   var i, offset = 0;
+  /*
   for (i = (TRANSACTION_LENGTH - HASH_LENGTH) / HASH_LENGTH; i-- > 0; ) {
-    offset = copyTransactionToStates(states, transactionTrits, offset);
-    if(i == 1) break;
+    offset = copyHashLength(states, transactionTrits, offset);
     transform(states);
   }
   setOffset(states);
-}
-  /*
+  */
   var j;
   //for (i = HASH_LENGTH; i < STATE_LENGTH; i++) {
   for (i = 0; i < STATE_LENGTH; i++) {
@@ -128,4 +126,6 @@ export default function /*searchInit*/(states, transactionTrits) {
   states.high[2] = HIGH_2; //0b1111111111000000000111111111111111111000000000111111111111111111L;
   states.low[3] = LOW_3;   //0b1111111111000000000000000000000000000111111111111111111111111111L; 
   states.high[3] = HIGH_3; //0b0000000000111111111111111111111111111111111111111111111111111111L;
+}
+  /*
   */

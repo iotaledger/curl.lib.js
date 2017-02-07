@@ -2,7 +2,7 @@
   "name": "curl.js",
   "version": "1.0.0",
   "description": "Javascript Curl implementation - with WebGL acceleration",
-  "main": "index.js",
+  "main": "target/search.js",
   "scripts": {
     "test": "gulp --harmony test",
     "_babel": "babel --presets es2015 app/*.js -o build/curl.bundle.js",

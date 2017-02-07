@@ -16,6 +16,20 @@ void main() {
   }
 }
 `
+export let finalize = `
+void main() {
+  init();
+  ivec4 my_vec = read();
+  int first_good_row = read_at(ivec2(STATE_LENGTH, 0)).b;
+  if(my_coord.y == first_good_row) {
+    if(my_coord.x < HASH_LENGTH) {
+      ivec4 watch_vec = read_at(ivec2(STATE_LENGTH, my_coord.y));
+      my_vec.a = (my_vec.r & watch_vec.a) == 0? 1 : ((my_vec.g & watch_vec.a) == 0? -1 : 0);
+    }
+  }
+  commit(my_vec);
+}
+`
 export let increment_depth = `
 int get_increment_depth(int from_index, int to_index) {
   ivec4 i_coord;
@@ -23,9 +37,12 @@ int get_increment_depth(int from_index, int to_index) {
     i_coord = read_at(ivec2(from_index, my_coord.y));
     if(i_coord.r != LOW_BITS)
       return i;
-    }
   }
-  return to_index;
+}
+`
+export let increment_one = `
+void main() {
+  init();
 }
 `
 export let barrier = `
@@ -131,296 +148,115 @@ void main() {
       }
     }
     //commit(ivec4(my_coord.xy,r_texel.s,my_vec.a));
-    my_vec.b = my_coord.y;
-    my_vec.r = mwm;
+    //my_vec.b = my_coord.y;
+    //my_vec.r = mwm;
     commit(my_vec);
   } else {
     commit(my_vec);
   }
 }
 `
-
-let oldstuff = {
-  headers: `#define HASH_LENGTH 243
-  #define STATE_LENGTH 3 * HASH_LENGTH
-  #define HALF_LENGTH 364
-  /*
-  #define HIGH_BITS 0xFFFFFFFFFFFFFFFF
-  #define LOW_BITS 0x0000000000000000
-  */
-  #define HIGH_BITS 0xFFFFFFFF
-  #define LOW_BITS 0x00000000
-  `,
-  coord_at: `
-  vec2 coord_at(vec2 desired_pos) {
-    vec2 size = floor(gl_FragCoord.xy / pos.xy);
-    return desired_pos / size;
-  }
-  `,
-  init: `
-  void main() {
-    commit(gl_FragCoord.y == 0.5 ? read() : readAt(coord_at(vec2(gl_FragCoord.x,0.5))));
-  }
-  `,
-  offset: `
-  void main() {
-    int p = int(gl_FragCoord.y);
-    vec4 my_vec = read();
-    int watcher_index = 729;
-    int start = HASH_LENGTH / 3;
-    int end = (HASH_LENGTH/3)*2;
-    if(p >= start  && !(p > end && p < watcher_index)) {
-      for(int i = 0; i < p; i++) {
-        if(p == watcher_index) {
-          my_vec.r = float(get_increment_depth(start, end));
-          commit(my_vec);
-        }
-        block(HASH_LENGTH/3, 2 * (HASH_LENGTH/3), 729, p);
-        if(p >= HASH_LENGTH/3 && p <= 2 * (HASH_LENGTH/3)) {
-          increment(float(HASH_LENGTH / 3), float(readAt(coord_at(vec2(729.5, gl_FragCoord.y))).r));
-        }
-      }
-    }
-  }
-  int get_increment_depth(const int from_index,const int to_index) {
-    //for(int i= from_index; i < to_index; i++) {
-    for(int i= 0; i < 81; i++) {
-      //if (readAt(vec2(i,gl_FragCoord.y)).r != float(LOW_BITS)) {
-      if (readAt(coord_at(vec2(float(i+from_index)+0.5,gl_FragCoord.y))).r != float(LOW_BITS)) {
-        return i;
-      }
-    }
-    return to_index;
-  }
-  void increment(float from_index, float last_index) {
-    vec4 my_vec = read();
-    if(gl_FragCoord.x <= last_index && gl_FragCoord.x >= from_index) {
-      if(gl_FragCoord.x == last_index) {
-        if (my_vec.g == float(LOW_BITS)) {
-          my_vec.g = float(HIGH_BITS);
-        } else {
-          my_vec.r = float(LOW_BITS);
-        }
-      } else {
-        my_vec.r = float(HIGH_BITS);
-        my_vec.g = float(LOW_BITS);
-      }
-    }
-    commit(my_vec);
-  }`,
-  increment: `void main() {
-    vec4 my_vec = read();
-    //for(float i = 0.5 + float(HASH_LENGTH / 3 *2); i < float(HASH_LENGTH)+0.5; i++) {
-    if(gl_FragCoord.y > 9.5 || gl_FragCoord.y < 6.5) return;
-    for(float i = 6.5; i < 9.5; i++) {
-      for(float j = 0.5; j < 27.5; j++) {
-        if(i > gl_FragCoord.y || (j > gl_FragCoord.x && i == gl_FragCoord.y)) {
-          break; //I don't care what follows me
-        }
-        if(readAt(coord_at(vec2(j,i))).r == float(LOW_BITS)) {
-          if(i == gl_FragCoord.y && j == gl_FragCoord.x) {
-            my_vec.r = float(HIGH_BITS);
-            my_vec.g = float(LOW_BITS);
-          }
-        } else {
-          if(i == gl_FragCoord.y && j == gl_FragCoord.x) {
-            if (my_vec.g == float(LOW_BITS)) {
-              my_vec.g = float(HIGH_BITS);
-            } else {
-              my_vec.r = float(LOW_BITS);
-            }
-          }
+export let k_col_check = `
+void main() {
+  init();
+  ivec4 my_vec = read();
+  int i;
+  if(my_coord.x == STATE_LENGTH && my_coord.y == 0) {
+    my_vec.b = 0;
+    if(my_vec.a == 0) {
+      ivec4 read_vec;
+      for(i = 1; i < int(size.y); i++) {
+        read_vec = read_at( ivec2( STATE_LENGTH, i));
+        if(read_vec.a != 0) {
+          my_vec.a = read_vec.a;
+          my_vec.b = i;
           break;
         }
       }
     }
-    my_vec.b = my_vec.r;
-    my_vec.a = my_vec.g;
-    commit(my_vec);
-  }`,
-  transform: ` void main() {
-    int alpha, beta, gamma, delta;
-    int index, t1, t2;
-    vec4 v1,v2;
-
-    if(gl_FragCoord.y < 27.5) return;
-
-    index = int(floor(gl_FragCoord.x + 27.0 * (gl_FragCoord.y - 26.5)));
-    t1  = index == 0? 0:(index - ((index-1)/2)*2)*HALF_LENGTH - ((index-1)/2);
-    t2 = (index - (index/2)*2 +1)*HALF_LENGTH - index/2;
-
-    v1 = readAt(coord_at(vec2(float(t1 - (t1/27)*27)+ 0.5, float(t1 - (t1/27)*27) + 0.5)));
-    v2 = readAt(coord_at(vec2(float(t2 - (t2/27)*27)+ 0.5, float(t2 - (t2/27)*27) + 0.5)));
-
-    /*
-    alpha = int(v1.b);
-    beta = int(v1.a);
-    gamma = int(v2.a);
-    delta = (alpha | (~gamma)) & (int(v2.b) ^ beta);
-    commit(vec4(0,0,float(~delta), float((alpha ^ gamma) | delta)));
-    */
   }
-  `,
-  check: `void check(
-    state_low,
-    state_high,
-
-    stant size_t *min_weight_magnitude,
-
-    size_t gr_id
-  ) {
-    *nonce_probe = float(HIGH_BITS);
-    for (int i = HASH_LENGTH - *min_weight_magnitude; i < HASH_LENGTH; i++) {
-      *nonce_probe &= ~(state_low[i] ^ state_high[i]);
-      if(*nonce_probe == 0) return;
-    }
-    if(*nonce_probe != 0) {
-      *found = gr_id + 1;
-    }
-
-  }`,
-  search: (mwm) => `void main() {
-    if(id == 0) increment(&(mid_low[gid]), &(mid_high[gid]), (HASH_LENGTH/3)*2, HASH_LENGTH);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-    copy_mid_to_state(&(mid_low[gid]), &(mid_high[gid]), &(state_low[gid]), &(state_high[gid]), id, l_size, n_trits);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-    transform(&(state_low[gid]), &(state_high[gid]), id, l_size, n_trits);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-    if(id == 0) check(&(state_low[gid]), &(state_high[gid]), found, ${mwm}., &(nonce_probe[gr_id]), gr_id);
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-    if(*found != 0) break;
-  }`,
-  finalize : `void main(
-    trit_t *trit_hash,
-    trit_t *mid_low,
-    trit_t *mid_high,
-
-
-  ) {
-    size_t i,j, id, gid, gr_id, l_size, n_trits;
-    setup_ids(&id, &gid, &gr_id, &l_size, &n_trits);
-
-    if(gr_id == (size_t)(*found - 1) && nonce_probe[gr_id] != 0) {
-      for(i = 0; i < n_trits; i++) {
-        j = id + i*l_size;
-        if(j < HASH_LENGTH) {
-          trit_hash[j] = (mid_low[gid + j] & nonce_probe[gr_id]) == 0 ? 
-            1 : (mid_high[gid + j] & nonce_probe[gr_id]) == 0 ? -1 : 0;
-        }
-      }
-    }
-  }`
+  commit(my_vec);
 }
-//commit(vec4(mypos, my_vec.rg));
-//commit(vec4(readAt(coord_at(vec2(0,1.5))).xy, floor(vec2(730.0, 730.0/2.0)* pos )));
-/*
-vec2 mypos = coord_at(vec2(0,1));
-vec4 elsewhere = readAt(mypos);
-commit(vec4(elsewhere.gb, floor(vec2(730.0, 730.0/2.0)* mypos )));
-*/
-//commit(vec4(coords.xy, gl_FragCoord.xy/pos));
-//commit(vec4(my_vec.r - 1.0, my_vec.g - 2.0, my_vec.b - 3.0, my_vec.a - 4.0));
-//commit(a_position);
-//if(coords.y > 0.0) {
-//vec4 base = readAt(vec2(pos.x,pos.y));
-//commit(vec4(elsewhere.gb, floor(vec2(730.0, 730.0/2.0)* mypos )));
-//my_vec.r = base.r; //mid_low
-//my_vec.g = base.g; //mid_high
+`
+export let add = `
+int sum (int a, int b) {
+  int my_sum = a + b;
+  return my_sum == 2 ? -1 : (my_sum == -2) ? 1 : my_sum;
+}
+int cons (int a, int b) {
+  return (a == 1 && b == 1)? 1 : (a == -1 && b == -1) ? -1 : 0;
+}
+int any_t (int a, int b) {
+  int my_any = a + b;
+  return my_any == 0 ? 0 : (my_any > 0) ? 1 : -1;
+}
+ivec2 full_adder(int a, int b, int c) {
+  int c_a, c_b, sum_ab, c_s;
 
-//commit(my_vec);
-/*
-    trit_t *mid_low,
-    trit_t *mid_high,
-    size_t from_index,
-    size_t to_index
-    */
-/*
-        int i = 0;
-        do {
-          i += readAt(vec2(float)i+.5,gl_FragCoord.y)).b == float)1? 1 : 0;
-        } while(i < 730);
-        my_vec.r = i+1 < p ? HASH_LENGTH / 3 : 0;
-        my_vec.g = 1;
-        commit(my_vec);
-      } else {
-        do {} while (readAt(vec2(729.5, gl_FragCoord.y)).r == 0.0);
-        my_vec.b = 1.0;
-        commit(my_vec);
-        do {} while (readAt(vec2(729.5, gl_FragCoord.y)).g == 0.0);
-      }
-      */
-/*
-        float p = floor(coords.y);
-        for(float i = 0.0; i < p; i++) {
-//increment(&(mid_low[gid]), &(mid_high[gid]), HASH_LENGTH / 3, (HASH_LENGTH / 3) * 2);
-        }
-        */
+  c_a    = cons(a,b);
+  sum_ab = sum(a,b);
+  c_b    = cons(sum_ab,c);
+  c_s    = any_t(c_a, c_b);
 
-/*
-  block: `
-  void watch(int start, int end, float val, float newval) {
-    vec4 my_vec = read();
-    int sweep = start;
-    while(sweep < end) {
-      if(readAt(coord_at(vec2(float(sweep)+0.5, gl_FragCoord.y))).a == val) sweep++;
-    }
-    my_vec.a = newval;
+  return ivec2(sum(sum_ab, c), c_s);
+}
+ivec2 get_sum_to_index(int from, int to, int number_to_add) {
+  int trit_to_add, trit_at_index, pow, carry, num_carry;
+  ivec2 read_in, sum_out, out_trit;
+  pow = 1;
+  carry = 0;
+  num_carry = 0;
+
+  for(int i = from; i < to; i++) {
+    //if(trit_to_add == 0 && sum_out.t == 0) continue;
+
+    read_in = read_at ( ivec2 (i, my_coord.y)).rg;
+
+    trit_to_add = ((my_coord.y / pow) % 3) + num_carry;
+    num_carry = trit_to_add > 1 ? 1 : 0;
+    trit_to_add = (trit_to_add == 2 ? -1 : (trit_to_add == 3 ? 0 : trit_to_add));
+
+    sum_out = full_adder(
+      (read_in.s == LOW_BITS ? 1 : read_in.t == LOW_BITS? -1 : 0), 
+      trit_to_add, 
+      carry
+    );
+
+    if(my_coord.x == i) break;
+    carry = sum_out.t;
+    pow *=3;
+  }
+  if(sum_out.s == 0) {
+    return ivec2(HIGH_BITS);
+  } else if (sum_out.s == 1) {
+    return ivec2(LOW_BITS, HIGH_BITS);
+  } else {
+    return ivec2(HIGH_BITS, LOW_BITS);
+  }
+}
+`
+export let offset = `
+void main() {
+  init();
+  if(my_coord.x >= HASH_LENGTH / 3 && my_coord.x < HASH_LENGTH / 3 * 2 ) {
+    ivec2 sum_out; ivec4 my_vec;
+    my_vec = read();
+    sum_out = full_adder(1, 1, -1);//sum(-1, 1);
+    int sum_i = sum_out.s;
+    my_vec.ba = sum_i == 0 ? ivec2(HIGH_BITS) : sum_i == 1 ? ivec2(LOW_BITS, HIGH_BITS) : ivec2(HIGH_BITS,LOW_BITS);
+    my_vec.ba = get_sum_to_index(HASH_LENGTH / 3, HASH_LENGTH / 3 + 10, my_coord.y);
     commit(my_vec);
+  } else {
+    commit(read());
   }
-  void wait(int watcher_index, float val, float setval) {
-    vec4 my_vec = read();
-    my_vec.a = setval;
-    commit(my_vec);
-    while (readAt(coord_at((vec2(float(watcher_index) + 0.5, gl_FragCoord.y)))).a == val) { }
-  }
-  void block(int start, int end, int watcher_index, int index) {
-    vec4 my_vec = read();
-    if(index == watcher_index) {
-      watch(start, end, 1.5, 1.5);
-      watch(start, end, 0.5, 0.5);
-    } else if (index >= start && index <= end) {
-      wait(watcher_index, 1.5, 1.5);
-      my_vec.a = 0.5;
-      commit(my_vec);
-    }
-  }
-  `,
-  */
-/*
-  void transform(
-    state_low,
-    state_high,
-    size_t id,
-    size_t l_size,
-    size_t n_trits
-  ) {
-    size_t round, i, j, t1, t2;
-    trit_t sp_low[3], sp_high[3];
-    for(round = 0; round < 27; round++) {
-      for(i = 0; i < n_trits; i++) {
-        j = id + i*l_size;
-        t1 = j == 0? 0:(((j - 1)%2)+1)*HALF_LENGTH - ((j-1)>>1);
-        t2 = ((j%2)+1)*HALF_LENGTH - ((j)>>1);
-
-        alpha = state_low[t1];
-        beta = state_high[t1];
-        gamma = state_high[t2];
-        delta = (alpha | (~gamma)) & (state_low[t2] ^ beta);
-
-        sp_low[i] = ~delta;
-        sp_high[i] = (alpha ^ gamma) | delta;
-      }
-      barrier(CLK_LOCAL_MEM_FENCE);
-      for(i = 0; i < n_trits; i++) {
-        j = id + i*l_size;
-        state_low[j] = sp_low[i];
-        state_high[j] = sp_high[i];
-      }
-      barrier(CLK_LOCAL_MEM_FENCE);
-    }
-  }*/
-
+  
+}
+`
+export let increment = `
+void main() {
+  init();
+  ivec4 my_vec = read();
+  my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1);
+  commit(my_vec);
+}
+`

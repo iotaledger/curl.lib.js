@@ -1,7 +1,10 @@
 import Turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
-import {k_init, headers, twistMain, barrier, twist, k_transform, increment, k_check} from './kernel'
+//import {k_init, headers, twistMain, barrier, twist, k_transform, increment, k_check, k_col_check} from './kernel'
+import * as KRNL from './kernel'
 import * as Const from './constants'
+import * as Converter from "iota.lib.js/lib/crypto/converter"
+import Curl from "iota.lib.js/lib/crypto/curl"
 
 let MAXIMAGESIZE = 1e6;
 let dim = {};
@@ -18,10 +21,12 @@ export default class {
     if(Turbo) {
       this.turbo = new Turbo(imageSize, dim);
       this.buf = this.turbo.ipt.data;
-      this.turbo.addProgram("init", k_init);
-      this.turbo.addProgram("check", headers + k_check);
-      this.turbo.addProgram("twist", headers + barrier + twist + twistMain);
-
+      this.turbo.addProgram("init", KRNL.k_init);
+      this.turbo.addProgram("offset", KRNL.headers + KRNL.add + KRNL.offset);
+      this.turbo.addProgram("twist", KRNL.headers + KRNL.barrier + KRNL.twist + KRNL.twistMain);
+      this.turbo.addProgram("check", KRNL.headers + KRNL.k_check);
+      this.turbo.addProgram("col_check", KRNL.headers + KRNL.k_col_check);
+      this.turbo.addProgram("finalize", KRNL.headers + KRNL.finalize);
       this.findNonce = this._turboFindNonce;
       this.state = "READY";
     }
@@ -37,6 +42,7 @@ export default class {
           high : new Int32Array(Const.STATE_LENGTH)
         };
         searchInit(states, transactionTrits);
+
         this.findNonce(states, minWeightMagnitude, (hash) => res(hash));
       }
     });
@@ -44,59 +50,64 @@ export default class {
 
   _turboFindNonce(states, minWeightMagnitude, callback) {
     this._turboWriteBuffers(states);
+
     this.mwm = minWeightMagnitude;
     this.cb = callback;
 
-    this.buf = this.turbo.run("init", this.buf);
-
-    this._turboOffset();
+    //this.buf = this.turbo.run("init", this.buf);
+    this.turbo.run("init", this.buf);
     /*
-    var diff = 0;
-    for(var i = 0; i < (dim.x-1)*texelSize; i+=texelSize) {
-      var j = i + dim.x*texelSize;
-      var k = j + dim.x*texelSize;
-      if(this.buf[j] != this.buf[k]) {
-        diff = i/texelSize;
-        console.log(diff);
-      }
-    }
-    return;
+    console.log(this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])[0].slice(81,100));
+    console.log(this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])[1].slice(81,100));
     */
-    requestAnimationFrame(() => this._turboSearch(callback));
+    var b = this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])
+    console.log(b[0].slice(81,91));
+    this.buf = this.turbo.run("offset");
+    var b = this.buf.reduce(pack(4), []).map(x=> x[2] == 0? 1: x[3] == 0? -1: 0).reduce(pack(dim.x), [])
+    //var d = this.buf.reduce(pack(4), []).map(x=> x[2]).reduce(pack(dim.x), [])
+    for(var i = 0; i < 27; i++) {
+      console.log(b[i].slice(81,101).join(" "));
+    }
+
+    //requestAnimationFrame(() => this._turboSearch(callback));
   }
 
   _turboSearch(callback) {
-    //var d = this.buf.reduce(pack(4), []).reduce(pack(dim.x), []).map(v => v[162][0]);
     console.log("next");
     for(var i = 0; i < dim.y; i++) {
       this._turboIncrement(Const.HASH_LENGTH /3 * 2, Const.HASH_LENGTH, i);
     }
+    
+    var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), [])[0];
+    window.x0 = dat.map(x=>x[0]);
+    window.x1 = dat.map(x=>x[1]);
+    window.x2 = dat.map(x=>x[2]);
+    window.x3 = dat.map(x=>x[3]);
     this._turboTransform();
+    //console.log(dat.map(x=>x[3]))
+    //console.log(this.buf.reduce(pack(4), []).map(x=>x[3]).reduce(pack(dim.x), [])[0]);
+    //return;
+
     var {index, nonce} = this._turboCheck();
+
     if(index === -1) {
       requestAnimationFrame(() => this._turboSearch(callback));
     } else {
-      var length = dim.x*texelSize;
-      var start = length*index;
-      var end = start + Const.HASH_LENGTH*texelSize;
-      //console.log("index: " + index + " nonce: " + nonce);
-      nonce &= 1 << (31-Math.clz32(nonce));
-      console.log("index: " + index + " nonce: " + nonce);
-      callback(
-        this.buf
-        .reduce(pack(4), []).reduce(pack(dim.x), [])[index]
-        .slice(0,Const.HASH_LENGTH)
-        .map( x => (x[0] & nonce == 0) ? 1 : ( (x[1] & nonce) == 0 ? -1 : 0))
+      callback( this.turbo.run("finalize", this.buf)
+        .subarray(0, texelSize * Const.STATE_LENGTH)
+        .reduce(pack(4), [])
+        .map(x => x[3])
       );
     }
   }
 
   _turboCheck() {
     var length = dim.x * texelSize;
-    var index = -1, nonce;
+    var index , nonce;
     this.buf[length-3] = this.mwm;
     //this.turbo.run(this.buf, dim, headers + k_check);
     this.buf = this.turbo.run("check", this.buf);
+    this.buf = this.turbo.run("col_check", this.buf);
 
     /*
     for(var i = 0; i < dim.y; i++) {
@@ -104,19 +115,15 @@ export default class {
       //console.log(d);
     }
     */
-    for(var i = 0; i < dim.y; i++) {
-      //index = i;
-      var d = this.buf[length*(i+1)-1];//dat[i][dim.x-1][3];//
-      //console.log(i+": "+d);
-      nonce = d;
-      
-      if(nonce != 0 ) {//&& this._slowCheck(length, i)
-        //nonce = this._slowCheck(length, i);
-        //console.log(dat[i].slice(length*i + Const.HASH_LENGTH/3, length*i + (Const.HASH_LENGTH/3)*2).map(x => x[0]);
-        
-        index = i;
-        return {index, nonce};
-      }
+
+    nonce = this.buf[length-1];
+    index = nonce == 0? -1: this.buf[length-2];
+    /*
+    nonce = dat[0][729][3];//this.buf[729*4+2];
+    */
+    if(nonce != 0) {
+      var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), []);
+      console.log(dat[0].map(x => x[0]));
     }
     return {index, nonce};
   }
@@ -164,11 +171,10 @@ export default class {
   _turboTransform() {
     //this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
     for(var i = 0; i < 27; i++) {
-      this.turbo.run("twist", this.buf);
+      this.buf = this.turbo.run("twist", this.buf);
       this.turbo.gl.finish();
     }
   }
-
   _turboWriteBuffers(states) {
     for(var i = 0; i < Const.STATE_LENGTH; i++) {
       this.buf[i * texelSize] = states.low[i];
@@ -178,18 +184,3 @@ export default class {
     }
   }
 }
-/*
- *
-        var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), []);
-        console.log(dat[i].slice(Const.HASH_LENGTH/3, Const.HASH_LENGTH*2/3)
-          .map(x => x[0] & x[1] !== 0? 0 : (x[0] === 0 ? 1 : -1))
-        );
-        console.log(dat[i+1].slice(Const.HASH_LENGTH/3, Const.HASH_LENGTH*2/3)
-          .map(x => x[0] & x[1] !== 0? 0 : (x[0] === 0 ? 1 : -1))
-        );
-        console.log(dat[i+2].slice(Const.HASH_LENGTH/3, Const.HASH_LENGTH*2/3)
-          .map(x => x[0] & x[1] !== 0? 0 : (x[0] === 0 ? 1 : -1))
-        );
-        console.log(this.buf.slice(length*(i-1) - 8, (i-1)*length));
-        console.log(this.buf.slice(length*i - 8, i*length));
-        */

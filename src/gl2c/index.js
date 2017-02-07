@@ -140,6 +140,8 @@ export default class {
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     if(data != null)
       this.writeData(data);
+    else
+      this.writeData(this.ipt.data);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
