@@ -103,7 +103,7 @@ export default class {
     }
     return fragmentShader;
   }
-  addProgram (name, code) {
+  addProgram (name, code, ...uniforms) {
     let gl = this.gl;
     let vertexShader = this.vertexShader;
 
@@ -115,16 +115,22 @@ export default class {
     gl.bindAttribLocation(program, this.attrib.position, 'position');
     gl.bindAttribLocation(program, this.attrib.texture, 'texture');
     gl.linkProgram(program);
+    var u_vars = new Map();
+    for(var variable of uniforms) {
+      u_vars.set(variable, gl.getUniformLocation(program, variable));
+    }
     if(!!this.programs.get(name)) {
       console.log("program exists");
     }
-    this.programs.set(name, program);
+    this.programs.set(name, {program, u_vars});
   }
   use (name) {
   }
-  run (name, data, read) {
+  run (name, data, ...uniforms) {
     let gl = this.gl;
-    let program = this.programs.get(name);
+    let info = this.programs.get(name);
+    let program = info.program;
+    let u_vars = info.u_vars;
     if(program === null)
       throw new Error("No Such Program!");
 
@@ -145,6 +151,9 @@ export default class {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(this.vao);
     gl.uniform1i(uTexture, 0);
+    for(var u_v of uniforms) {
+      gl.uniform1i(u_vars.get(u_v.n), u_v.v);
+    }
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
 

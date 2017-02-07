@@ -120,12 +120,15 @@ void main() {
 }
 `
 export let k_check = `
+uniform int minWeightMagnitude;
 void main() {
   init();
   ivec4 my_vec = read();
   if(my_coord.x == STATE_LENGTH) {
     ivec2 r_texel;
-    int mwm = read_at(ivec2(STATE_LENGTH, 0)).g;//my_vec.a;
+    int mwm = minWeightMagnitude;//read_at(ivec2(STATE_LENGTH, 0)).g;//my_vec.a;
+    my_vec.r = mwm;
+    my_vec.g = 32;
     my_vec.a = HIGH_BITS;
     int i;
     for (i = mwm; i-- > 0; ) {

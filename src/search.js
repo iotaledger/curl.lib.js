@@ -25,7 +25,7 @@ export default class {
       this.turbo.addProgram("init", KRNL.headers + KRNL.add + KRNL.offset + KRNL.k_init);
       this.turbo.addProgram("increment", KRNL.headers + KRNL.add + KRNL.increment);
       this.turbo.addProgram("twist", KRNL.headers + KRNL.barrier + KRNL.twist + KRNL.twistMain);
-      this.turbo.addProgram("check", KRNL.headers + KRNL.k_check);
+      this.turbo.addProgram("check", KRNL.headers + KRNL.k_check, "minWeightMagnitude");
       this.turbo.addProgram("col_check", KRNL.headers + KRNL.k_col_check);
       this.turbo.addProgram("finalize", KRNL.headers + KRNL.finalize);
       this.findNonce = this._turboFindNonce;
@@ -72,21 +72,14 @@ export default class {
     }
   }
 
-  _turboCheck() {
-    var length = dim.x * texelSize;
-    this.buf[length-3] = this.mwm;
-    //console.log("mwm: " + this.buf[length-3]);
-    this.turbo.run("check", this.buf);
-    return this.turbo.run("col_check")[length-2];
-  }
-
   _turboTransform() {
     var b;
+    this.turbo.gl.flush();
     for(var i = 27; i-- > 0;) {
       b = this.turbo.run("twist")
-        //.reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
+      //  .reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
       //console.log(i + "\t" + b[0].slice(0,27).join(", "));
-      //this.turbo.gl.finish();
+      this.turbo.gl.finish();
     }
     this.buf = b;
   }
@@ -102,9 +95,9 @@ export default class {
   }
 
   _turboNext(callback) {
-    var index = this._turboCheck();
+    var b = this.turbo.run("check", null, {n:"minWeightMagnitude", v: this.mwm});
     if(t0 == 0) {console.log("check " + (Date.now()-s0)/1e3); s0 = Date.now(); t0 = 1;}
-    if(index === -1) {
+    if(this.turbo.run("col_check")[dim.x * texelSize - 2] === -1) {
       requestAnimationFrame(() => this._turboSearch(callback));
     } else {
       this._turboFinish(callback);
