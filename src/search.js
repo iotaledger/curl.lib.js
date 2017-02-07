@@ -1,6 +1,5 @@
 import Turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
-//import {k_init, headers, twistMain, barrier, twist, k_transform, increment, k_check, k_col_check} from './kernel'
 import * as KRNL from './kernel'
 import * as Const from './constants'
 import * as Converter from "iota.lib.js/lib/crypto/converter"
@@ -100,7 +99,7 @@ export default class {
       requestAnimationFrame(() => this._turboSearch(callback));
     } else {
       callback( this.turbo.run("finalize")
-        .subarray(0, texelSize * Const.STATE_LENGTH)
+        .subarray(0, texelSize * Const.HASH_LENGTH)
         .reduce(pack(4), [])
         .map(x => x[3])
       );
