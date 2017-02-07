@@ -126,12 +126,9 @@ void main() {
   ivec4 my_vec = read();
   if(my_coord.x == STATE_LENGTH) {
     ivec2 r_texel;
-    int mwm = minWeightMagnitude;//read_at(ivec2(STATE_LENGTH, 0)).g;//my_vec.a;
-    my_vec.r = mwm;
-    my_vec.g = 32;
     my_vec.a = HIGH_BITS;
     int i;
-    for (i = mwm; i-- > 0; ) {
+    for (i = minWeightMagnitude; i-- > 0; ) {
       r_texel = read_at(ivec2(STATE_LENGTH - 1 - i, my_coord.y)).ba;
       my_vec.a &= ~(r_texel.s ^ r_texel.t);
       if (my_vec.a == 0) {
