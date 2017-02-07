@@ -4,6 +4,7 @@ import * as KRNL from './kernel'
 import * as Const from './constants'
 import * as Converter from "iota.lib.js/lib/crypto/converter"
 import Curl from "iota.lib.js/lib/crypto/curl"
+import t from "./test"
 
 let MAXIMAGESIZE = 1e6;
 let dim = {};
@@ -49,7 +50,13 @@ export default class {
           this.queue.push({s: states, m: minWeightMagnitude, c: (hash) => res(hash)});
         } else {
           this.state = "SEARCHING";
-          this.findNonce(states, minWeightMagnitude, (hash) => res(hash));
+          this.findNonce(states, minWeightMagnitude, (hash) => {
+            transactionTrits.splice(
+              Const.TRANSACTION_LENGTH-Const.HASH_LENGTH,
+              Const.HASH_LENGTH,
+              hash);
+            res(hash);
+          });
         }
       }
     });
@@ -58,7 +65,6 @@ export default class {
   doNext() {
     var next = this.queue.shift();
     if(next != null) {
-      console.log("doing next hash");
       this.findNonce(next.s, next.m, next.c);
     } else {
       this.state = "READY";
@@ -72,24 +78,29 @@ export default class {
     }
   }
 
-  _turboTransform() {
-    var b;
-    this.turbo.gl.flush();
-    for(var i = 27; i-- > 0;) {
-      b = this.turbo.run("twist")
-      //  .reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
-      //console.log(i + "\t" + b[0].slice(0,27).join(", "));
-      this.turbo.gl.finish();
-    }
-    this.buf = b;
-  }
 
   _turboSearch(callback) {
-    console.log("next");
+    //console.log("next");
     var s1, s2;
     this.turbo.run("increment");
     if(t0 == 0) {console.log("increment " + (Date.now()-s0)/1e3); s0 = Date.now();}
-    this._turboTransform();
+    var b;
+    for(var i = 27; i-- > 0;) {
+      b = this.turbo.run("twist");
+      /*
+      if(t0 == 1) {
+        console.log("different count on " + i + ": " + b
+          .reduce(pack(4), [])
+          .reduce(pack(dim.x), [])[0]
+          .slice(0,dim.x-1)
+          //.map(x => x[2])
+          .filter((v,id) => v[2] - t[1][26-i][id] != 0)
+          .length
+        );
+      }
+      */
+    }
+    //if(t0 == 1) t0++;
     if(t0 == 0) {console.log("transform " + (Date.now()-s0)/1e3); s0 = Date.now();}
     this._turboNext(callback);
   }
