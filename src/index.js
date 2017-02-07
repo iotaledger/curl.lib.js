@@ -18,7 +18,7 @@ import * as Const from './constants'
   curl.initialize(new Int32Array(Const.STATE_LENGTH));
   var pearlDiver = new PearlDiver();
   var checkHash = new Int32Array(Const.HASH_LENGTH);
-  var minWeightMagnitude = 5;
+  var minWeightMagnitude = 10;
 
   var testTrits = Converter.trits(trinaryString);//new Int32Array(Const.TRANSACTION_LENGTH);
 

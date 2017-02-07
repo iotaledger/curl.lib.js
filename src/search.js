@@ -9,6 +9,8 @@ let MAXIMAGESIZE = 1e6;
 let dim = {};
 let texelSize = 4;
 
+var s0 = 0;
+var t0 = 0;
 dim.x = Const.STATE_LENGTH+1;
 let imageSize= Math.floor(MAXIMAGESIZE / dim.x / texelSize ) * dim.x * texelSize;//dim.x*texelSize*2;
 dim.y = imageSize / dim.x / texelSize ;
@@ -20,9 +22,7 @@ export default class {
     if(Turbo) {
       this.turbo = new Turbo(imageSize, dim);
       this.buf = this.turbo.ipt.data;
-      this.turbo.addProgram("init", KRNL.k_init);
-      this.turbo.addProgram("copy", KRNL.copy);
-      this.turbo.addProgram("offset", KRNL.headers + KRNL.add + KRNL.offset);
+      this.turbo.addProgram("init", KRNL.headers + KRNL.add + KRNL.offset + KRNL.k_init);
       this.turbo.addProgram("increment", KRNL.headers + KRNL.add + KRNL.increment);
       this.turbo.addProgram("twist", KRNL.headers + KRNL.barrier + KRNL.twist + KRNL.twistMain);
       this.turbo.addProgram("check", KRNL.headers + KRNL.k_check);
@@ -55,6 +55,16 @@ export default class {
     });
   }
 
+  doNext() {
+    var next = this.queue.shift();
+    if(next != null) {
+      console.log("doing next hash");
+      this.findNonce(next.s, next.m, next.c);
+    } else {
+      this.state = "READY";
+    }
+  }
+
   _turboWriteBuffers(states) {
     for(var i = 0; i < Const.STATE_LENGTH; i++) {
       this.buf[i * texelSize] = states.low[i];
@@ -64,52 +74,50 @@ export default class {
 
   _turboCheck() {
     var length = dim.x * texelSize;
-    var index , nonce;
     this.buf[length-3] = this.mwm;
-    this.turbo.run("check");
-    this.buf = this.turbo.run("col_check");
-
-
-    nonce = this.buf[length-1];
-    index = nonce == 0? -1: this.buf[length-2];
-    if(nonce != 0) {
-      var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), []);
-      //console.log(dat[0].map(x => x[0]));
-    }
-    return {index, nonce};
+    //console.log("mwm: " + this.buf[length-3]);
+    this.turbo.run("check", this.buf);
+    return this.turbo.run("col_check")[length-2];
   }
 
   _turboTransform() {
     var b;
     for(var i = 27; i-- > 0;) {
       b = this.turbo.run("twist")
-        .reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
-      console.log(i + "\t" + b[0].slice(0,27).join(", "));
-      this.turbo.gl.finish();
+        //.reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
+      //console.log(i + "\t" + b[0].slice(0,27).join(", "));
+      //this.turbo.gl.finish();
     }
+    this.buf = b;
   }
 
   _turboSearch(callback) {
+    console.log("next");
+    var s1, s2;
     this.turbo.run("increment");
-    this.turbo.run("copy");
+    if(t0 == 0) {console.log("increment " + (Date.now()-s0)/1e3); s0 = Date.now();}
     this._turboTransform();
+    if(t0 == 0) {console.log("transform " + (Date.now()-s0)/1e3); s0 = Date.now();}
+    this._turboNext(callback);
+  }
 
-    var {index, nonce} = this._turboCheck();
+  _turboNext(callback) {
+    var index = this._turboCheck();
+    if(t0 == 0) {console.log("check " + (Date.now()-s0)/1e3); s0 = Date.now(); t0 = 1;}
     if(index === -1) {
       requestAnimationFrame(() => this._turboSearch(callback));
     } else {
-      callback( this.turbo.run("finalize")
-        .subarray(0, texelSize * Const.HASH_LENGTH)
-        .reduce(pack(4), [])
-        .map(x => x[3])
-      );
-      var next = this.queue.shift();
-      if(next != null) {
-          this.findNonce(next.s, next.m, next.c);
-      } else {
-        this.state = "READY";
-      }
+      this._turboFinish(callback);
+      this.doNext();
     }
+  }
+
+  _turboFinish(callback) {
+    callback( this.turbo.run("finalize")
+      .subarray(0, texelSize * Const.HASH_LENGTH)
+      .reduce(pack(4), [])
+      .map(x => x[3])
+    );
   }
 
   _turboFindNonce(states, minWeightMagnitude, callback) {
@@ -117,9 +125,9 @@ export default class {
 
     this.mwm = minWeightMagnitude;
     this.cb = callback;
+    if(t0 == 0) s0 = Date.now();
     this.turbo.run("init", this.buf);
-    this.turbo.run("offset");
+    if(t0 == 0) {console.log("init " + (Date.now()-s0)/1e3); s0 = Date.now();}
     requestAnimationFrame(() => this._turboSearch(callback));
   }
-
 }

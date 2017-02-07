@@ -4,18 +4,6 @@ export let headers = `#define HASH_LENGTH 243
 #define HIGH_BITS 0xFFFFFFFF
 #define LOW_BITS 0x00000000
 `
-export let k_init = `
-void main() {
-  init();
-  ivec4 i = read();
-  //i.a = my_coord.y;
-  if(my_coord.y == 0) {
-    commit(i);
-  } else {
-    commit(read_at(ivec2(my_coord.x,0)));
-  }
-}
-`
 export let copy = `
 void main() {
   init();
@@ -147,13 +135,8 @@ void main() {
         break;
       }
     }
-    //commit(ivec4(my_coord.xy,r_texel.s,my_vec.a));
-    //my_vec.b = my_coord.y;
-    //my_vec.r = mwm;
-    commit(my_vec);
-  } else {
-    commit(my_vec);
   }
+  commit(my_vec);
 }
 `
 export let k_col_check = `
@@ -165,6 +148,7 @@ void main() {
     my_vec.b = 0;
     if(my_vec.a == 0) {
       ivec4 read_vec;
+      my_vec.b = -1;
       for(i = 1; i < int(size.y); i++) {
         read_vec = read_at( ivec2( STATE_LENGTH, i));
         if(read_vec.a != 0) {
@@ -200,7 +184,7 @@ ivec2 full_adder(int a, int b, int c) {
 
   return ivec2(sum(sum_ab, c), c_s);
 }
-ivec2 get_sum_to_index(int from, int to, int number_to_add) {
+ivec2 get_sum_to_index(int from, int to, int number_to_add, int row) {
   int trit_to_add, trit_at_index, pow, carry, num_carry;
   ivec2 read_in, sum_out, out_trit;
   pow = 1;
@@ -210,9 +194,9 @@ ivec2 get_sum_to_index(int from, int to, int number_to_add) {
   for(int i = from; i < to; i++) {
     //if(trit_to_add == 0 && sum_out.t == 0) continue;
 
-    read_in = read_at ( ivec2 (i, my_coord.y)).rg;
+    read_in = read_at ( ivec2 (i, row)).rg;
 
-    trit_to_add = ((my_coord.y / pow) % 3) + num_carry;
+    trit_to_add = ((number_to_add / pow) % 3) + num_carry;
     num_carry = trit_to_add > 1 ? 1 : 0;
     trit_to_add = (trit_to_add == 2 ? -1 : (trit_to_add == 3 ? 0 : trit_to_add));
 
@@ -236,17 +220,24 @@ ivec2 get_sum_to_index(int from, int to, int number_to_add) {
 }
 `
 export let offset = `
+ivec4 offset() {
+  if(my_coord.x >= HASH_LENGTH / 3 && my_coord.x < HASH_LENGTH / 3 * 2 ) {
+    ivec4 my_vec;
+    my_vec.rg = get_sum_to_index(HASH_LENGTH / 3, HASH_LENGTH / 3 * 2, my_coord.y, 0);
+    return my_vec;
+  } else {
+    return read_at(ivec2(my_coord.x,0));
+  }
+}
+`
+export let k_init = `
 void main() {
   init();
-  if(my_coord.x >= HASH_LENGTH / 3 && my_coord.x < HASH_LENGTH / 3 * 2 ) {
-    ivec2 sum_out; ivec4 my_vec;
-    my_vec = read();
-    my_vec.rg = get_sum_to_index(HASH_LENGTH / 3, HASH_LENGTH / 3 * 2, my_coord.y);
-    commit(my_vec);
-  } else {
+  if(my_coord.y == 0) {
     commit(read());
+  } else {
+    commit(offset());
   }
-
 }
 `
 export let increment = `
@@ -254,8 +245,9 @@ void main() {
   init();
   ivec4 my_vec = read();
   if(my_coord.x >= HASH_LENGTH / 3 * 2 && my_coord.x < HASH_LENGTH ) {
-    my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1);
+    my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1, my_coord.y);
   }
+  my_vec.ba = my_vec.rg;
   commit(my_vec);
 }
 `
