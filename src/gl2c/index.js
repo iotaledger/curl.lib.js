@@ -122,7 +122,7 @@ export default class {
   }
   use (name) {
   }
-  run (name, data) {
+  run (name, data, read) {
     let gl = this.gl;
     let program = this.programs.get(name);
     if(program === null)

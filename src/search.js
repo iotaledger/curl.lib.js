@@ -22,13 +22,16 @@ export default class {
       this.turbo = new Turbo(imageSize, dim);
       this.buf = this.turbo.ipt.data;
       this.turbo.addProgram("init", KRNL.k_init);
+      this.turbo.addProgram("copy", KRNL.copy);
       this.turbo.addProgram("offset", KRNL.headers + KRNL.add + KRNL.offset);
+      this.turbo.addProgram("increment", KRNL.headers + KRNL.add + KRNL.increment);
       this.turbo.addProgram("twist", KRNL.headers + KRNL.barrier + KRNL.twist + KRNL.twistMain);
       this.turbo.addProgram("check", KRNL.headers + KRNL.k_check);
       this.turbo.addProgram("col_check", KRNL.headers + KRNL.k_col_check);
       this.turbo.addProgram("finalize", KRNL.headers + KRNL.finalize);
       this.findNonce = this._turboFindNonce;
       this.state = "READY";
+      this.queue = [];
     }
   }
 
@@ -43,61 +46,20 @@ export default class {
         };
         searchInit(states, transactionTrits);
 
-        this.findNonce(states, minWeightMagnitude, (hash) => res(hash));
+        if(this.state == "SEARCHING") {
+          this.queue.push({s: states, m: minWeightMagnitude, c: (hash) => res(hash)});
+        } else {
+          this.state = "SEARCHING";
+          this.findNonce(states, minWeightMagnitude, (hash) => res(hash));
+        }
       }
     });
   }
 
-  _turboFindNonce(states, minWeightMagnitude, callback) {
-    this._turboWriteBuffers(states);
-
-    this.mwm = minWeightMagnitude;
-    this.cb = callback;
-
-    //this.buf = this.turbo.run("init", this.buf);
-    this.turbo.run("init", this.buf);
-    /*
-    console.log(this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])[0].slice(81,100));
-    console.log(this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])[1].slice(81,100));
-    */
-    var b = this.buf.reduce(pack(4), []).map(x=> x[0] == 0? 1: x[1] == 0? -1: 0).reduce(pack(dim.x), [])
-    console.log(b[0].slice(81,91));
-    this.buf = this.turbo.run("offset");
-    var b = this.buf.reduce(pack(4), []).map(x=> x[2] == 0? 1: x[3] == 0? -1: 0).reduce(pack(dim.x), [])
-    //var d = this.buf.reduce(pack(4), []).map(x=> x[2]).reduce(pack(dim.x), [])
-    for(var i = 0; i < 27; i++) {
-      console.log(b[i].slice(81,101).join(" "));
-    }
-
-    //requestAnimationFrame(() => this._turboSearch(callback));
-  }
-
-  _turboSearch(callback) {
-    console.log("next");
-    for(var i = 0; i < dim.y; i++) {
-      this._turboIncrement(Const.HASH_LENGTH /3 * 2, Const.HASH_LENGTH, i);
-    }
-    
-    var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), [])[0];
-    window.x0 = dat.map(x=>x[0]);
-    window.x1 = dat.map(x=>x[1]);
-    window.x2 = dat.map(x=>x[2]);
-    window.x3 = dat.map(x=>x[3]);
-    this._turboTransform();
-    //console.log(dat.map(x=>x[3]))
-    //console.log(this.buf.reduce(pack(4), []).map(x=>x[3]).reduce(pack(dim.x), [])[0]);
-    //return;
-
-    var {index, nonce} = this._turboCheck();
-
-    if(index === -1) {
-      requestAnimationFrame(() => this._turboSearch(callback));
-    } else {
-      callback( this.turbo.run("finalize", this.buf)
-        .subarray(0, texelSize * Const.STATE_LENGTH)
-        .reduce(pack(4), [])
-        .map(x => x[3])
-      );
+  _turboWriteBuffers(states) {
+    for(var i = 0; i < Const.STATE_LENGTH; i++) {
+      this.buf[i * texelSize] = states.low[i];
+      this.buf[i * texelSize + 1] = states.high[i];
     }
   }
 
@@ -105,82 +67,60 @@ export default class {
     var length = dim.x * texelSize;
     var index , nonce;
     this.buf[length-3] = this.mwm;
-    //this.turbo.run(this.buf, dim, headers + k_check);
-    this.buf = this.turbo.run("check", this.buf);
-    this.buf = this.turbo.run("col_check", this.buf);
+    this.turbo.run("check");
+    this.buf = this.turbo.run("col_check");
 
-    /*
-    for(var i = 0; i < dim.y; i++) {
-      var d = dat[i][dim.x-1][3];//this.buf[length*i-1];
-      //console.log(d);
-    }
-    */
 
     nonce = this.buf[length-1];
     index = nonce == 0? -1: this.buf[length-2];
-    /*
-    nonce = dat[0][729][3];//this.buf[729*4+2];
-    */
     if(nonce != 0) {
       var dat = this.buf.reduce(pack(4), []).reduce(pack(dim.x), []);
-      console.log(dat[0].map(x => x[0]));
+      //console.log(dat[0].map(x => x[0]));
     }
     return {index, nonce};
   }
 
-  _slowCheck(len, y) {
-    var lastMeasurement = 0xFFFFFFFF;
-    for (var i = this.mwm; i-- > 0; ) {
-      lastMeasurement &= ~(
-        this.buf[len*y + (Const.HASH_LENGTH - 1 - i) * texelSize + 2] ^
-        this.buf[len*y + (Const.HASH_LENGTH - 1 - i) * texelSize + 3]);
-      if (lastMeasurement == 0) {
-      return 0;
-      }
-    }
-    return lastMeasurement;
-  }
-
-  _turboOffset() {
-    for(var i = 1; i < dim.y; i++) {
-      for(var j = 0; j < i; j++) {
-        this._turboIncrement(Const.HASH_LENGTH/3, 2 * Const.HASH_LENGTH / 3, i * dim.x);
-      }
-      //console.log("offset at: " +i + " done " + j+" times.");
-    }
-  }
-
-  _turboIncrement(from, to, row) {
-    for(var i = from; i < to; i++) {
-      if (this.buf[(i + row)* texelSize] == 0) {
-        this.buf[(i + row)* texelSize] = 0xFFFFFFFF;
-        this.buf[(i + row)* texelSize + 1] = 0;
-      }
-      else {
-        if (this.buf[(i + row)* texelSize + 1] == 0) {
-          this.buf[(i + row)* texelSize + 1] = 0xFFFFFFFF;
-        }
-        else {
-          this.buf[(i + row)* texelSize] = 0;
-        }
-        break;
-      }
-    }
-    //this.turbo.run(this.buf, dim, headers + increment);
-  }
   _turboTransform() {
-    //this.turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
-    for(var i = 0; i < 27; i++) {
-      this.buf = this.turbo.run("twist", this.buf);
+    var b;
+    for(var i = 27; i-- > 0;) {
+      b = this.turbo.run("twist")
+        .reduce(pack(4), []).map(x => x[2]).reduce(pack(dim.x), []);
+      console.log(i + "\t" + b[0].slice(0,27).join(", "));
       this.turbo.gl.finish();
     }
   }
-  _turboWriteBuffers(states) {
-    for(var i = 0; i < Const.STATE_LENGTH; i++) {
-      this.buf[i * texelSize] = states.low[i];
-      this.buf[i * texelSize + 1] = states.high[i];
-      this.buf[i * texelSize + 2] = states.low[i];
-      this.buf[i * texelSize + 3] = states.high[i];
+
+  _turboSearch(callback) {
+    this.turbo.run("increment");
+    this.turbo.run("copy");
+    this._turboTransform();
+
+    var {index, nonce} = this._turboCheck();
+    if(index === -1) {
+      requestAnimationFrame(() => this._turboSearch(callback));
+    } else {
+      callback( this.turbo.run("finalize")
+        .subarray(0, texelSize * Const.STATE_LENGTH)
+        .reduce(pack(4), [])
+        .map(x => x[3])
+      );
+      var next = this.queue.shift();
+      if(next != null) {
+          this.findNonce(next.s, next.m, next.c);
+      } else {
+        this.state = "READY";
+      }
     }
   }
+
+  _turboFindNonce(states, minWeightMagnitude, callback) {
+    this._turboWriteBuffers(states);
+
+    this.mwm = minWeightMagnitude;
+    this.cb = callback;
+    this.turbo.run("init", this.buf);
+    this.turbo.run("offset");
+    requestAnimationFrame(() => this._turboSearch(callback));
+  }
+
 }

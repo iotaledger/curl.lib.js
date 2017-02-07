@@ -16,6 +16,14 @@ void main() {
   }
 }
 `
+export let copy = `
+void main() {
+  init();
+  ivec4 i = read();
+  i.ba = i.rg;
+  commit(i);
+}
+`
 export let finalize = `
 void main() {
   init();
@@ -122,12 +130,16 @@ void transform() {
 export let  twistMain = `
 void main() {
   init();
+  ivec4 my_vec = read();
   if(my_coord.x < STATE_LENGTH) {
+    my_vec.ba = twist();
+    /*
     ivec2 tw = twist();
     barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
-    commit(ivec4(read().rg,tw));
+    */
+    commit(my_vec);
   } else {
-    commit(read());
+    commit(my_vec);
   }
 }
 `
@@ -241,10 +253,7 @@ void main() {
   if(my_coord.x >= HASH_LENGTH / 3 && my_coord.x < HASH_LENGTH / 3 * 2 ) {
     ivec2 sum_out; ivec4 my_vec;
     my_vec = read();
-    sum_out = full_adder(1, 1, -1);//sum(-1, 1);
-    int sum_i = sum_out.s;
-    my_vec.ba = sum_i == 0 ? ivec2(HIGH_BITS) : sum_i == 1 ? ivec2(LOW_BITS, HIGH_BITS) : ivec2(HIGH_BITS,LOW_BITS);
-    my_vec.ba = get_sum_to_index(HASH_LENGTH / 3, HASH_LENGTH / 3 + 10, my_coord.y);
+    my_vec.rg = get_sum_to_index(HASH_LENGTH / 3, HASH_LENGTH / 3 * 2, my_coord.y);
     commit(my_vec);
   } else {
     commit(read());
@@ -256,7 +265,9 @@ export let increment = `
 void main() {
   init();
   ivec4 my_vec = read();
-  my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1);
+  if(my_coord.x >= HASH_LENGTH / 3 * 2 && my_coord.x < HASH_LENGTH ) {
+    my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1);
+  }
   commit(my_vec);
 }
 `
