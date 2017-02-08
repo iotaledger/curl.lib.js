@@ -42,8 +42,6 @@ Available functions:
 * `remove(void)` 
     * removes the proof-of-work job that you had previously queued
 
-----
-
 ### To Do
 
 - [ ] Improve speed
