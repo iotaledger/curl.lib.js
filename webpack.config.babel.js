@@ -2,7 +2,7 @@ import path from 'path';
 
 module.exports = {
   entry: {
-    index: './example/index.js'
+    index: './src/index.js'
   },
   module: {
     loaders: [

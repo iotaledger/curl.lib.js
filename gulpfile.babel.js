@@ -9,7 +9,7 @@ import WebpackDevServer from 'webpack-dev-server';
 gulp.task('default', ['webpack']);
 
 gulp.task('babel', () => {
-  return gulp.src(['src/*.js','src/*/*.js','example/*.js'])
+  return gulp.src(['src/*.js','src/*/*.js'])
     .pipe(babel())
     .pipe(gulp.dest('target'));
 });
