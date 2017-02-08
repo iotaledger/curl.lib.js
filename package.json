@@ -35,13 +35,14 @@
   },
   "dependencies": {
     "glsl-transpiler": "^1.5.7",
+    "iota.lib.js": "^0.1.3",
     "twgl.js": "^2.8.2"
   },
   "_comment": {
     "devDependencies": {
       "webpack": "^1.14.0",
       "babel-preset-es2015": "^6.22.0",
-	  "@mattdesl/smokestack-webgl2": "^3.3.0",
+      "@mattdesl/smokestack-webgl2": "^3.3.0",
       "_babel": "babel --presets es2015 app/*.js -o build/curl.bundle.js"
     }
   }

@@ -1,10 +1,7 @@
 import Turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
-import * as KRNL from './kernel'
+import KRNL from './shaders'
 import * as Const from './constants'
-import * as Converter from "iota.lib.js/lib/crypto/converter"
-import Curl from "iota.lib.js/lib/crypto/curl"
-import t from "./test"
 
 let MAXIMAGESIZE = 1e6;
 let dim = {};
@@ -27,17 +24,17 @@ function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
   }
 }
 
-export default class {
+export default class PearlDiver {
   constructor() {
     if(Turbo) {
       this.turbo = new Turbo(imageSize, dim);
       this.buf = this.turbo.ipt.data;
-      this.turbo.addProgram("init", KRNL.headers + KRNL.add + KRNL.offset + KRNL.k_init);
-      this.turbo.addProgram("increment", KRNL.headers + KRNL.add + KRNL.increment);
-      this.turbo.addProgram("twist", KRNL.headers + KRNL.barrier + KRNL.twist + KRNL.twistMain);
-      this.turbo.addProgram("check", KRNL.headers + KRNL.do_check + KRNL.k_check, "minWeightMagnitude");
-      this.turbo.addProgram("col_check", KRNL.headers + KRNL.k_col_check);
-      this.turbo.addProgram("finalize", KRNL.headers + KRNL.do_check + KRNL.finalize);
+      this.turbo.addProgram("init", KRNL.init);
+      this.turbo.addProgram("increment", KRNL.increment);
+      this.turbo.addProgram("twist", KRNL.transform);
+      this.turbo.addProgram("check", KRNL.check, "minWeightMagnitude");
+      this.turbo.addProgram("col_check", KRNL.col_check);
+      this.turbo.addProgram("finalize", KRNL.finalize);
       this.findNonce = this._turboFindNonce;
       this.state = "READY";
       this.queue = [];
@@ -93,6 +90,8 @@ export default class {
     for(var i = 0; i < Const.STATE_LENGTH; i++) {
       this.buf[i * texelSize] = states.low[i];
       this.buf[i * texelSize + 1] = states.high[i];
+      this.buf[i * texelSize + 2] = states.low[i];
+      this.buf[i * texelSize + 3] = states.high[i];
     }
   }
 
@@ -113,10 +112,16 @@ export default class {
 
   _turboSearch(searchObject) {
     if(this.state == "INTERRUPTED") return this._save(searchObject);
-    console.log("still looking...");
     this.turbo.run("increment");
-    for(var i = 27; i-- > 0;) this.turbo.run("twist");
+    this._turboTransform();
     this._turboNext(searchObject);
+  }
+
+  _turboTransform () {
+    for(var i = 26; i-- > 0;) {
+      this.turbo.run("twist");
+    }
+    return this.turbo.run("twist");
   }
 
   _turboFindNonce(searchObject) {
