@@ -9,13 +9,13 @@ import WebpackDevServer from 'webpack-dev-server';
 gulp.task('default', ['webpack']);
 
 gulp.task('babel', () => {
-  return gulp.src(['src/*.js','src/*/*.js','test/*.js'])
+  return gulp.src(['src/*.js','src/*/*.js','example/*.js'])
     .pipe(babel())
     .pipe(gulp.dest('target'));
 });
 
 gulp.task('test', ['babel'], () => {
-  return gulp.src('tests/*.js')
+  return gulp.src('test/*.js')
     .pipe(mocha())
     .on('error', () => {
       gulp.emit('end');
@@ -23,7 +23,7 @@ gulp.task('test', ['babel'], () => {
 });
 
 gulp.task('watch-test', () => {
-  return gulp.watch(['src/**', 'test/**'], ['test']);
+  return gulp.watch(['src/**', 'test/**', 'example/**'], ['test']);
 });
 
 gulp.task('webpack', ['test'], function(callback) {

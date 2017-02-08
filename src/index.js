@@ -1,8 +1,8 @@
 import PearlDiver from './pearldiver'
-//import '../test'
+
 var pearlDiver = new PearlDiver();
 
 export default {
-  pow: pearlDiver.search,
-  interrupt: pearlDiver.interrupt
+  pow: (t,m) => pearlDiver.search(t,m),
+  interrupt: () => pearlDiver.interrupt()
 }
