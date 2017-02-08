@@ -9,7 +9,9 @@ npm run build
 ```
 
 ## usage
-----
+
+An example of the usage of curl.lib.js:
+
 ```
 var curl = require('curl.lib.js');
 var trits = require('iota.lib.js/lib/crypto/converter').trits(myTryteString);
@@ -31,14 +33,14 @@ curl.pow(trits, minWeightMagnitude)
 ```
 
 Available functions:
-* to get the proof-of-work on a transaction 
-    * `pow(<Array(8019)> transactionTrits, <int 0 >= i > 243 > minWeightMagnitude)` 
-* to interrupt the currently running proof-of-work function
-    * `interrupt(void)` 
-* to continue the proof-of-work that you just interrupted
-    * `resume(void)` 
-* to remove the proof-of-work job that you had previously queued
-    * `remove(void)` 
+* `pow(<Array(8019)> transactionTrits, <int 0 >= i > 243 > minWeightMagnitude)` 
+    * gets the proof-of-work on a transaction 
+* `interrupt(void)` 
+    * interrupts the currently running proof-of-work function
+* `resume(void)` 
+    * continues the proof-of-work that you just interrupted
+* `remove(void)` 
+    * removes the proof-of-work job that you had previously queued
 
 ### To Do
 ----
