@@ -9,13 +9,13 @@ import WebpackDevServer from 'webpack-dev-server';
 gulp.task('default', ['webpack']);
 
 gulp.task('babel', () => {
-  return gulp.src(['src/*.js','src/*/*.js'])
+  return gulp.src(['src/*.js','src/*/*.js','test/*.js'])
     .pipe(babel())
     .pipe(gulp.dest('target'));
 });
 
 gulp.task('test', ['babel'], () => {
-  return gulp.src('test/*.js')
+  return gulp.src('tests/*.js')
     .pipe(mocha())
     .on('error', () => {
       gulp.emit('end');

@@ -1,11 +1,10 @@
 {
   "name": "curl.js",
   "version": "1.0.0",
-  "description": "Javascript Curl implementation - with WebGL acceleration",
-  "main": "target/search.js",
+  "description": "Javascript Curl implementation - with WebGL2 acceleration",
+  "main": "target/index.js",
   "scripts": {
     "test": "gulp --harmony test",
-    "_babel": "babel --presets es2015 app/*.js -o build/curl.bundle.js",
     "build": "gulp --harmony",
     "server": "gulp server"
   },
@@ -23,8 +22,8 @@
   "devDependencies": {
     "babel-core": "^6.22.1",
     "babel-loader": "^6.2.10",
-    "babel-preset-latest": "^6.22.0",
     "babel-preset-es2015": "^6.22.0",
+    "babel-preset-latest": "^6.22.0",
     "chai": "^3.5.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
@@ -41,7 +40,9 @@
   "_comment": {
     "devDependencies": {
       "webpack": "^1.14.0",
-      "babel-preset-es2015": "^6.22.0"
+      "babel-preset-es2015": "^6.22.0",
+	  "@mattdesl/smokestack-webgl2": "^3.3.0",
+      "_babel": "babel --presets es2015 app/*.js -o build/curl.bundle.js"
     }
   }
 }

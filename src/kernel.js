@@ -16,10 +16,15 @@ export let finalize = `
 void main() {
   init();
   ivec4 my_vec = read();
+  if(my_coord.y == 0 && my_coord.x == STATE_LENGTH) {
+    my_vec.g = check(my_vec.b, my_vec.r);
+  }
   if(my_coord.y == 0 && my_coord.x < HASH_LENGTH) {
     ivec4 info_vec = read_at(ivec2(STATE_LENGTH, 0));
-    ivec4 hash_vec = read_at(ivec2(my_coord.x, info_vec.b));
-    my_vec.a = (hash_vec.r & info_vec.a) == 0? 1 : ((hash_vec.g & info_vec.a) == 0? -1 : 0);
+    int nonce_probe = info_vec.a;
+    int row = info_vec.b;
+    ivec4 hash_vec = read_at(ivec2(my_coord.x, row));
+    my_vec.a = (hash_vec.r & nonce_probe) == 0? 1 : ((hash_vec.g & nonce_probe) == 0? -1 : 0);
   }
   commit(my_vec);
 }
@@ -69,12 +74,6 @@ void barrier(ivec2 watch_coords, int high) {
       //while(watch.g == watch.b || watch.a != 123) {
       watch = read_at(watch_coords);
     }
-    /*
-    if(high == 0)
-      my_vec.r = hold;
-    else
-      my_vec.a = hold;
-      */
   }
   commit(my_vec);
 }
@@ -119,22 +118,27 @@ void main() {
   commit(my_vec);
 }
 `
+export let do_check = `
+int check(int row, int min_weight_magnitude) {
+  int nonce_probe, i;
+  ivec2 r_texel;
+  nonce_probe = HIGH_BITS;
+  for(i = min_weight_magnitude; i-- > 0; ) {
+    r_texel = read_at(ivec2(STATE_LENGTH - 1 - i, row)).ba;
+    nonce_probe &= ~(r_texel.s ^ r_texel.t);
+    if(nonce_probe == 0) break;
+  }
+  return nonce_probe;
+}
+`
 export let k_check = `
 uniform int minWeightMagnitude;
 void main() {
   init();
   ivec4 my_vec = read();
   if(my_coord.x == STATE_LENGTH) {
-    ivec2 r_texel;
-    my_vec.a = HIGH_BITS;
-    int i;
-    for (i = minWeightMagnitude; i-- > 0; ) {
-      r_texel = read_at(ivec2(STATE_LENGTH - 1 - i, my_coord.y)).ba;
-      my_vec.a &= ~(r_texel.s ^ r_texel.t);
-      if (my_vec.a == 0) {
-        break;
-      }
-    }
+    my_vec.r = minWeightMagnitude;
+    my_vec.a = check(my_coord.y, minWeightMagnitude);
   }
   commit(my_vec);
 }
@@ -248,6 +252,19 @@ void main() {
     my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 1, my_coord.y);
   }
   my_vec.ba = my_vec.rg;
+  commit(my_vec);
+}
+`
+export let add22k = `
+void main() {
+  init();
+  ivec4 my_vec = read();
+  if(my_coord.y == 0) {
+    if(my_coord.x >= HASH_LENGTH / 3 * 2 && my_coord.x < HASH_LENGTH ) {
+      my_vec.rg = get_sum_to_index(HASH_LENGTH * 2 / 3, HASH_LENGTH, 22043, my_coord.y);
+    }
+    my_vec.ba = my_vec.rg;
+  }
   commit(my_vec);
 }
 `
