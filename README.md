@@ -45,5 +45,5 @@ Available functions:
 ### To Do
 ----
 
-- [ ] Find out some way to perform iterative loops on Fragment Shader when each step needs to know the output of the last from a separate index (i,e. hacked-together compute shader).
-
+- [ ] Improve speed
+    - [ ] Find out some way to perform iterative loops on Fragment Shader when each step needs to know the output of the last from a separate index (i,e. hacked-together compute shader).
