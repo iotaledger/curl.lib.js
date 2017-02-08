@@ -37,4 +37,8 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
   pearlDiver.pow(testTrits, minWeightMagnitude)
     .then(hashResult(testTrits))
     .catch(logError);
+  setTimeout(() => {
+    pearlDiver.interrupt();
+    setTimeout(() => {pearlDiver.resume()}, 100);
+  }, 100);
 }

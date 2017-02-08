@@ -16,9 +16,9 @@ dim.y = imageSize / dim.x / texelSize ;
 
 var pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && r;
 
-function pearlDiverCallback (res, transactionTrits)
+function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
-  return (hash) => {
+  return (hash, searchObject) => {
     Array.prototype.splice.apply(transactionTrits, [
       Const.TRANSACTION_LENGTH-Const.HASH_LENGTH,
       Const.HASH_LENGTH,
@@ -56,9 +56,9 @@ export default class {
         searchInit(states, transactionTrits);
 
         this.queue.push({
-          s: states, 
-          m: minWeightMagnitude, 
-          c: pearlDiverCallback(res, transactionTrits)
+          states: states, 
+          mwm: minWeightMagnitude, 
+          call: pearlDiverCallback(res, transactionTrits, minWeightMagnitude, this)
         });
         if(this.state == "READY") this.doNext();
       }
@@ -71,20 +71,22 @@ export default class {
 
   doNext() {
     var next = this.queue.shift();
-    if(next != null) {
-      this.state = "SEARCHING";
-      this.findNonce(next.s, next.m, next.c);
-    } else {
-      this.state = "READY";
+      if(this.state != "SEARCHING") {
+      if(next != null) {
+        this.state = "SEARCHING";
+        this.findNonce(next);
+      } else {
+        this.state = "READY";
+      }
     }
   }
 
-  _save() {
-    var states = {};
+  _save(searchObject) {
     this.buf.reduce(pack(4), []).slice(0,Const.STATE_LENGTH)
       .reduce((a,v)=> a.map((c,i) => c.push(v[i]))&& a, [[],[]])
-      .reduce((a,v,i) => (i%2 ? a.set("high", v) : a.set("low", v)) && a, new Map());
-    this.queue.unshift({s: states, m: minWeightMagnitude, c: callback});
+      .reduce((a,v,i) => (i%2 ? a.set("high", v) : a.set("low", v)) && a, new Map())
+      .forEach((v,k) => searchObject.states[k] = v);
+    this.queue.unshift(searchObject);
   }
 
   _turboWriteBuffers(states) {
@@ -94,35 +96,32 @@ export default class {
     }
   }
 
-  _turboNext(callback) {
-    this.buf = this.turbo.run("check", null, {n:"minWeightMagnitude", v: this.mwm});
+  _turboNext(searchObject) {
+    this.buf = this.turbo.run("check", null, {n:"minWeightMagnitude", v: searchObject.mwm});
     if(this.turbo.run("col_check")[dim.x * texelSize - 2] === -1 )
-      requestAnimationFrame(() => this._turboSearch(callback));
+      requestAnimationFrame(() => this._turboSearch(searchObject));
     else
-      this._turboFinish(callback);
+      this._turboFinish(searchObject);
   }
 
-  _turboFinish(callback) {
+  _turboFinish(searchObject) {
     var buf = this.turbo.run("finalize").reduce(pack(4), []);
     console.log("STL:" + buf[Const.STATE_LENGTH]);
-    callback(buf.slice(0, Const.HASH_LENGTH).map(x => x[3]));
-    this.doNext();
+    if(searchObject.call(buf.slice(0, Const.HASH_LENGTH).map(x => x[3]), searchObject))
+      this.doNext();
   }
 
-  _turboSearch(callback) {
-    if(this.state == "INTERRUPTED") return this._save();
+  _turboSearch(searchObject) {
+    if(this.state == "INTERRUPTED") return this._save(searchObject);
     console.log("still looking...");
     this.turbo.run("increment");
     for(var i = 27; i-- > 0;) this.turbo.run("twist");
-    this._turboNext(callback);
+    this._turboNext(searchObject);
   }
 
-  _turboFindNonce(states, minWeightMagnitude, callback) {
-    this._turboWriteBuffers(states);
-
-    this.mwm = minWeightMagnitude;
-    this.cb = callback;
+  _turboFindNonce(searchObject) {
+    this._turboWriteBuffers(searchObject.states);
     this.turbo.run("init", this.buf);
-    requestAnimationFrame(() => this._turboSearch(callback));
+    requestAnimationFrame(() => this._turboSearch(searchObject));
   }
 }
