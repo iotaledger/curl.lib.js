@@ -43,6 +43,7 @@ Available functions:
     * removes the proof-of-work job that you had previously queued
 
 ### To Do
+----
 
 - [ ] Improve speed
     - [ ] Find out some way to perform iterative loops on Fragment Shader when each step needs to know the output of the last from a separate index (i,e. hacked-together compute shader).
