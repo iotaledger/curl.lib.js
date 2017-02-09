@@ -3,7 +3,7 @@ import searchInit, {transform} from './searchInit'
 import KRNL from './shaders'
 import * as Const from './constants'
 
-let MAXIMAGESIZE = 1e7;//was 1e6;
+let MAXIMAGESIZE = Math.pow(document.createElement('canvas').getContext('webgl2').MAX_TEXTURE_SIZE, 2) * 0.99;//was 1e6;
 let dim = {};
 let texelSize = 4;
 
@@ -69,7 +69,7 @@ export default class PearlDiver {
 
   doNext() {
     var next = this.queue.shift();
-      if(this.state != "SEARCHING") {
+    if(this.state != "SEARCHING") {
       if(next != null) {
         this.state = "SEARCHING";
         this.findNonce(next);
@@ -113,17 +113,19 @@ export default class PearlDiver {
 
   _turboSearch(searchObject) {
     if(this.state == "INTERRUPTED") return this._save(searchObject);
-    console.log("next search");
     this.turbo.run("increment");
-    this._turboTransform();
-    this._turboNext(searchObject);
+    requestAnimationFrame(() => {
+      this._turboTransform();
+      requestAnimationFrame(() => {
+        this._turboNext(searchObject);
+      });
+    });
   }
 
   _turboTransform () {
-    for(var i = 26; i-- > 0;) {
+    for(var i = 27; i-- > 0;) {
       this.turbo.run("twist");
     }
-    return this.turbo.run("twist");
   }
 
   _turboFindNonce(searchObject) {
