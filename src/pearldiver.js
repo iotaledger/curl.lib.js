@@ -3,7 +3,7 @@ import searchInit, {transform} from './searchInit'
 import KRNL from './shaders'
 import * as Const from './constants'
 
-let MAXIMAGESIZE = 1e6;
+let MAXIMAGESIZE = 1e7;//was 1e6;
 let dim = {};
 let texelSize = 4;
 
@@ -25,11 +25,12 @@ function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 }
 
 export default class PearlDiver {
-  constructor() {
+  constructor(offset) {
     if(Turbo) {
+      this.offset = dim.y * (offset || 0);
       this.turbo = new Turbo(imageSize, dim);
       this.buf = this.turbo.ipt.data;
-      this.turbo.addProgram("init", KRNL.init);
+      this.turbo.addProgram("init", KRNL.init, "gr_offset");
       this.turbo.addProgram("increment", KRNL.increment);
       this.turbo.addProgram("twist", KRNL.transform);
       this.turbo.addProgram("check", KRNL.check, "minWeightMagnitude");
@@ -112,6 +113,7 @@ export default class PearlDiver {
 
   _turboSearch(searchObject) {
     if(this.state == "INTERRUPTED") return this._save(searchObject);
+    console.log("next search");
     this.turbo.run("increment");
     this._turboTransform();
     this._turboNext(searchObject);
@@ -126,7 +128,7 @@ export default class PearlDiver {
 
   _turboFindNonce(searchObject) {
     this._turboWriteBuffers(searchObject.states);
-    this.turbo.run("init", this.buf);
+    this.turbo.run("init", this.buf, {n: "gr_offset", v: this.offset});
     requestAnimationFrame(() => this._turboSearch(searchObject));
   }
 }

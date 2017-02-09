@@ -19,13 +19,15 @@ function _frameBufferSetup (gl, fbo, length, dim) {
 function alloc (sz) {
   // A sane limit for most GPUs out there.
   // JS falls apart before GLSL limits could ever be reached.
+  /*
   if (sz > 16777216)
     throw new Error("turbojs: Whoops, the maximum array size is exceeded!");
+    */
 
   var ns = Math.pow(Math.pow(2, Math.ceil(Math.log(sz) / 1.386) - 1), 2);
   return {
-    data : new Int32Array(ns * 16),
-    //data : new Float32Array(ns * 16),
+    //data : new Int32Array(ns * 16),
+    data : new Int32Array(sz),
     length : sz
   };
 }

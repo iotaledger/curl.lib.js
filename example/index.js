@@ -9,13 +9,13 @@ var trits = new Int32Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 var stateInitial = "9CQQOJFCHZFVXMXRIGSIFMPGDICB9DWQOASRA9RWZBYEGBFXYGAWKFQNMUADWPJBTQPKDZEJDMGEPSXHUOYJJDEWHLDDYOFV9WLCGQOXUCK9VNFZSOBWNYBHRFQMTZGBOZBVBPSDKTDNSCVQKNIGDCEZGBQZDGUPYLWEJRARSRELICJRLMTVBR9KYRFEDQT9YN9DZJAXUBVNOBGYYWPHLEIXBNCQPXCCACTDSMQHELQZQSMTHZK";
 var checkHash = new Int32Array(Const.HASH_LENGTH);
 
-var hashResult = (myTrits) => (hash) => {
+var hashResult = (myTrits, i) => (hash) => {
   var diff = (Date.now()-start)/1e3 ;
   start = Date.now();
   curl.initialize(new Int32Array(Const.STATE_LENGTH));
   curl.absorb(myTrits);
   curl.squeeze(checkHash);
-  console.log("hashed mwm of " + minWeightMagnitude + " in " + diff + "s; hash:\n\t" + Converter.trytes(checkHash));
+  console.log("index: "+ i +" hashed mwm of " + minWeightMagnitude + " in " + diff + "s; hash:\n\t" + Converter.trytes(checkHash));
 };
 
 var logError = (err) => console.log(err);
@@ -24,10 +24,9 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
   window.Converter = Converter;
   var curl =  new Curl();
   curl.initialize(new Int32Array(Const.STATE_LENGTH));
-  var minWeightMagnitude = 18;
+  var minWeightMagnitude = 13;
 
   var testTrits = Converter.trits(trinaryString);//[];//new Int32Array(Const.TRANSACTION_LENGTH);//
-  //randTrits(testTrits);
 
   curl.absorb(testTrits);
   curl.squeeze(checkHash);
@@ -35,10 +34,12 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
 
   start = Date.now();
   pearlDiver.pow(testTrits, minWeightMagnitude)
-    .then(hashResult(testTrits))
-    .catch(() => logError);
+    .forEach( (p, i) => p
+      .then(hashResult(testTrits, i))
+      .catch(() => logError)
+    );
   setTimeout(() => {
     pearlDiver.interrupt();
     setTimeout(() => {pearlDiver.resume()}, 100);
-  }, 100);
+  }, 100)
 }
