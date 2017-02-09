@@ -1,10 +1,13 @@
 import PearlDiver from './pearldiver'
 
-var pearlDiver = new PearlDiver();
+window.PearlDiver = PearlDiver;
+var pdInstance = [new PearlDiver()];
 
 export default {
-  pow: (t,m) => pearlDiver.search(t,m),
-  interrupt: () => pearlDiver.interrupt(),
-  resume: () => pearlDiver.doNext(),
-  remove: () => pearlDiver.queue.unshift()
+  addInstance: (num) => Array.prototype.push.apply(pdInstance, new Array(num).fill(undefined).map(x => new PearlDiver())),
+  getInstances: () => pdInstance,
+  pow: (t,m) => pdInstance[0].search(t,m),
+  interrupt: () => pdInstance[0].interrupt(),
+  resume: () => pdInstance[0].doNext(),
+  remove: () => pdInstance[0].queue.unshift()
 }
