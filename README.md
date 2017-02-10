@@ -35,6 +35,10 @@ curl.pow(trits, minWeightMagnitude)
 Available functions:
 * `pow(<Array(8019)> transactionTrits, <int 0 >= i > 243 > minWeightMagnitude)` 
     * gets the proof-of-work on a transaction 
+    * possible errors:
+        * Webgl2 wasn't available
+        * Transaction Trits were wrong length
+        * Min Weight Magnitude was greater than Hash length (243)
 * `interrupt(void)` 
     * interrupts the currently running proof-of-work function
 * `resume(void)` 
