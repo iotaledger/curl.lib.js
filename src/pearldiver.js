@@ -44,7 +44,8 @@ export default class PearlDiver {
 
   search(transactionTrits, minWeightMagnitude) {
     return new Promise((res, rej) => {
-      if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
+      if (this.turbo == null) rej(new Error("Webgl2 Is not Available"));
+      else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
       else if(minWeightMagnitude >= Const.HASH_LENGTH || minWeightMagnitude <= 0) rej(new Error("Bad Min-Weight Magnitude"));
       else {
         var states = {
