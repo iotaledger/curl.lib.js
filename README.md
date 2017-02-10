@@ -5,7 +5,7 @@ IOTA Proof-of-Work algorithm ported to Javascript to work in WebGL2-enabled brow
 
 ```
 npm install
-npm run build
+npm run compile
 ```
 
 ## usage

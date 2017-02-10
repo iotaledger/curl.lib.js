@@ -11,7 +11,7 @@ gulp.task('default', ['webpack']);
 gulp.task('babel', () => {
   return gulp.src(['src/*.js','src/*/*.js'])
     .pipe(babel())
-    .pipe(gulp.dest('target'));
+    .pipe(gulp.dest('lib'));
 });
 
 gulp.task('test', ['babel'], () => {
