@@ -13,9 +13,9 @@
     ]
   },
   "dependencies": {
-    "iota.lib.js": "^0.1.3"
   },
   "devDependencies": {
+    "iota.lib.js": "^0.1.3",
     "babel-core": "^6.22.1",
     "babel-loader": "^6.2.10",
     "babel-preset-es2015": "^6.22.0",
