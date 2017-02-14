@@ -42,7 +42,9 @@ export default class PearlDiver {
     }
   }
 
-  search(transactionTrits, minWeightMagnitude) {
+  getHashCount() { return dim.y; }
+
+  search(transactionTrits, minWeightMagnitude, offset) {
     return new Promise((res, rej) => {
       if (this.turbo == null) rej(new Error("Webgl2 Is not Available"));
       else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
