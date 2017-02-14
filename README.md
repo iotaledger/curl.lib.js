@@ -46,6 +46,11 @@ Available functions:
 * `remove(void)` 
     * removes the proof-of-work job that you had previously queued
 
+### In Browser
+
+Include `dist/curl.min.js` in your browser, and you'll find the `curl` object 
+available in the window space.
+
 ### To Do
 ----
 
