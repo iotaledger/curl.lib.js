@@ -28,7 +28,7 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
   window.Converter = Converter;
   var curl =  new Curl();
   curl.initialize(new Int32Array(Const.STATE_LENGTH));
-  var minWeightMagnitude = 15;
+  var minWeightMagnitude = 5;
 
   var testTrits = Converter.trits(trinaryString);//[];//new Int32Array(Const.TRANSACTION_LENGTH);//
 

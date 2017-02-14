@@ -2,7 +2,8 @@ import path from 'path';
 
 module.exports = {
   entry: {
-    index: './src/index.js'
+    //index: './example/index.js'
+    index: './src/curl.lib.js'
   },
   module: {
     loaders: [
@@ -18,8 +19,8 @@ module.exports = {
   },
   output: {
     path: __dirname,
-    publicPath: '/',
-    filename: '[name].bundle.js',
+    publicPath: '/dist',
+    filename: '[name].min.js',
     chunkFilename: '[id].bundle.js'
   }
 };
