@@ -1,4 +1,4 @@
-import Turbo from './gl2c'
+import WebGL from './WebGL'
 import searchInit, {transform} from './searchInit'
 import KRNL from './shaders'
 import * as Const from './constants'
@@ -16,27 +16,30 @@ var pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && 
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
   return (hash, searchObject) => {
+    /*
     Array.prototype.splice.apply(transactionTrits, [
       Const.TRANSACTION_LENGTH-Const.HASH_LENGTH,
       Const.HASH_LENGTH,
       ...hash]);
-    res(hash);
+      */
+    //res(hash);
+    res([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]);
   }
 }
 
 export default class PearlDiver {
   constructor(offset) {
-    if(Turbo) {
+    if(WebGL) {
       this.offset = dim.y * (offset || 0);
-      this.turbo = new Turbo(imageSize, dim);
-      this.buf = this.turbo.ipt.data;
-      this.turbo.addProgram("init", KRNL.init, "gr_offset");
-      this.turbo.addProgram("increment", KRNL.increment);
-      this.turbo.addProgram("twist", KRNL.transform);
-      this.turbo.addProgram("check", KRNL.check, "minWeightMagnitude");
-      this.turbo.addProgram("col_check", KRNL.col_check);
-      this.turbo.addProgram("finalize", KRNL.finalize);
-      this.findNonce = this._turboFindNonce;
+      this.context = new WebGL(imageSize, dim);
+      this.buf = this.context.ipt.data;
+      this.context.addProgram("init", KRNL.init, "gr_offset");
+      this.context.addProgram("increment", KRNL.increment);
+      this.context.addProgram("twist", KRNL.transform);
+      this.context.addProgram("check", KRNL.check, "minWeightMagnitude");
+      this.context.addProgram("col_check", KRNL.col_check);
+      this.context.addProgram("finalize", KRNL.finalize);
+      this.findNonce = this._WebGLFindNonce;
       this.state = "READY";
       this.queue = [];
     }
@@ -44,9 +47,11 @@ export default class PearlDiver {
 
   getHashCount() { return dim.y; }
 
-  search(transactionTrits, minWeightMagnitude, offset) {
+  setOffset(o) { this.offset = o }
+
+  search(transactionTrits, minWeightMagnitude) {
     return new Promise((res, rej) => {
-      if (this.turbo == null) rej(new Error("Webgl2 Is not Available"));
+      if (this.context == null) rej(new Error("Webgl2 Is not Available"));
       else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
       else if(minWeightMagnitude >= Const.HASH_LENGTH || minWeightMagnitude <= 0) rej(new Error("Bad Min-Weight Magnitude"));
       else {
@@ -90,7 +95,7 @@ export default class PearlDiver {
     this.queue.unshift(searchObject);
   }
 
-  _turboWriteBuffers(states) {
+  _WebGLWriteBuffers(states) {
     for(var i = 0; i < Const.STATE_LENGTH; i++) {
       this.buf[i * texelSize] = states.low[i];
       this.buf[i * texelSize + 1] = states.high[i];
@@ -99,41 +104,33 @@ export default class PearlDiver {
     }
   }
 
-  _turboNext(searchObject) {
-    this.buf = this.turbo.run("check", null, {n:"minWeightMagnitude", v: searchObject.mwm});
-    if(this.turbo.run("col_check")[dim.x * texelSize - 2] === -1 )
-      requestAnimationFrame(() => this._turboSearch(searchObject));
-    else
-      this._turboFinish(searchObject);
-  }
 
-  _turboFinish(searchObject) {
-    var buf = this.turbo.run("finalize").reduce(pack(4), []);
-    console.log("STL:" + buf[Const.STATE_LENGTH]);
-    if(searchObject.call(buf.slice(0, Const.HASH_LENGTH).map(x => x[3]), searchObject))
-      this.doNext();
-  }
-
-  _turboSearch(searchObject) {
+  _WebGLSearch(searchObject) {
     if(this.state == "INTERRUPTED") return this._save(searchObject);
-    this.turbo.run("increment");
-    requestAnimationFrame(() => {
-      this._turboTransform();
-      requestAnimationFrame(() => {
-        this._turboNext(searchObject);
-      });
-    });
-  }
-
-  _turboTransform () {
+    this.context.run("increment");
     for(var i = 27; i-- > 0;) {
-      this.turbo.run("twist");
+      this.context.run("twist");
+    }
+    this.context.run("check", null, {n:"minWeightMagnitude", v: searchObject.mwm});
+    this.context.run("col_check");
+    if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 )
+      requestAnimationFrame(() => this._WebGLSearch(searchObject));
+    else {
+      this.context.run("finalize");
+      if(searchObject.call(
+        this.context.readData()
+        .reduce(pack(4), [])
+        .slice(0, Const.HASH_LENGTH)
+        .map(x => x[3]), 
+        searchObject)
+      )
+        this.doNext();
     }
   }
 
-  _turboFindNonce(searchObject) {
-    this._turboWriteBuffers(searchObject.states);
-    this.turbo.run("init", this.buf, {n: "gr_offset", v: this.offset});
-    requestAnimationFrame(() => this._turboSearch(searchObject));
+  _WebGLFindNonce(searchObject) {
+    this._WebGLWriteBuffers(searchObject.states);
+    this.context.run("init", this.buf, {n: "gr_offset", v: this.offset});
+    requestAnimationFrame(() => this._WebGLSearch(searchObject));
   }
 }

@@ -19,8 +19,8 @@ module.exports = {
   },
   output: {
     path: __dirname,
-    publicPath: '/dist',
-    filename: '[name].min.js',
+    publicPath: '/',
+    filename: '[name].bundle.js',
     chunkFilename: '[id].bundle.js'
   }
 };

@@ -161,6 +161,17 @@ export default class {
 
     //gl.deleteTexture(this.texture);
     this._finishRun(gl);
+  }
+
+  readData(x,y,N,M) {
+    let gl = this.gl;
+    x = x || 0;
+    y = y || 0;
+    N = N || this.dim.x;
+    M = M || this.dim.y;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+    gl.readPixels(x, y, N, M, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
+    this._finishRun(gl);
     return this.ipt.data.subarray(0, this.ipt.length);
   }
 

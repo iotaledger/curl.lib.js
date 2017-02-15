@@ -10,6 +10,7 @@ gulp.task('default', ['webpack']);
 
 gulp.task('babel', () => {
   return gulp.src(['src/*.js','src/*/*.js'])
+  //return gulp.src(['src/*.js','src/*/*.js', 'example/*.js'])
     .pipe(babel())
     .pipe(gulp.dest('lib'));
 });
