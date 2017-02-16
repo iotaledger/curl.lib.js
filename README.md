@@ -33,12 +33,17 @@ curl.pow(trits, minWeightMagnitude)
 ```
 
 Available functions:
-* `pow(<Array(8019)> transactionTrits, <int 0 >= i > 243 > minWeightMagnitude)` 
+* `pow(transactionTrytes<String>,  minWeightMagnitude<int 0 >= i > 243 >, [callback(<String newTransactionTrytes>), error(<String error message>)])` 
     * gets the proof-of-work on a transaction 
     * possible errors:
         * Webgl2 wasn't available
         * Transaction Trits were wrong length
         * Min Weight Magnitude was greater than Hash length (243)
+* `setOffset(offset<int >0>)`
+    * sets an offset to start pow search from
+    * useful for amortized proof of work
+* `getHashCount()`
+    * returns the number of concurrent hash rows copmleted by this worker
 * `interrupt(void)` 
     * interrupts the currently running proof-of-work function
 * `resume(void)` 
