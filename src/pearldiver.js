@@ -1,3 +1,4 @@
+import {trits, trytes} from "iota.lib.js/lib/crypto/converter"
 import WebGL from './WebGL'
 import searchInit, {transform} from './searchInit'
 import KRNL from './shaders'
@@ -16,14 +17,16 @@ var pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && 
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
   return (hash, searchObject) => {
+    let newTransactionTrits = [...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash];
     /*
-    Array.prototype.splice.apply(transactionTrits, [
-      Const.TRANSACTION_LENGTH-Const.HASH_LENGTH,
-      Const.HASH_LENGTH,
-      ...hash]);
-      */
-    //res(hash);
-    res([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]);
+    let transactionHash = new Int32Array(Const.HASH_LENGTH);
+    let curl = new Curl();
+    curl.initialize(new Int32Array(Const.STATE_LENGTH));
+    curl.absorb(newTransactionTrits);
+    curl.squeeze(transactionHash);
+    //res([trytes(newTransactionTrits), trytes(transactionHash)]);
+    */
+    res(trytes(newTransactionTrits));
   }
 }
 
@@ -49,25 +52,34 @@ export default class PearlDiver {
 
   setOffset(o) { this.offset = o }
 
-  search(transactionTrits, minWeightMagnitude) {
-    return new Promise((res, rej) => {
-      if (this.context == null) rej(new Error("Webgl2 Is not Available"));
-      else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
-      else if(minWeightMagnitude >= Const.HASH_LENGTH || minWeightMagnitude <= 0) rej(new Error("Bad Min-Weight Magnitude"));
-      else {
-        var states = {
-          low : new Int32Array(Const.STATE_LENGTH),
-          high : new Int32Array(Const.STATE_LENGTH)
-        };
-        searchInit(states, transactionTrits);
+  setupSearch(transactionTrytes, minWeightMagnitude, res, rej) {
+    let transactionTrits = trits(transactionTrytes);
+    if (this.context == null) rej(new Error("Webgl2 Is not Available"));
+    else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
+    else if(minWeightMagnitude >= Const.HASH_LENGTH || minWeightMagnitude <= 0) rej(new Error("Bad Min-Weight Magnitude"));
+    else {
+      var states = {
+        low : new Int32Array(Const.STATE_LENGTH),
+        high : new Int32Array(Const.STATE_LENGTH)
+      };
+      searchInit(states, transactionTrits);
 
-        this.queue.push({
-          states: states, 
-          mwm: minWeightMagnitude, 
-          call: pearlDiverCallback(res, transactionTrits, minWeightMagnitude, this)
-        });
-        if(this.state == "READY") this.doNext();
-      }
+      this.queue.push({
+        states: states, 
+        mwm: minWeightMagnitude, 
+        call: pearlDiverCallback(res, transactionTrits, minWeightMagnitude, this)
+      });
+      if(this.state == "READY") this.doNext();
+    }
+  }
+
+  searchWithCallback(transactionTrytes, minWeightMagnitude, callback, err) {
+    this.setupSearch(transactionTrytes, minWeightMagnitude, callback, err);
+  }
+
+  search(transactionTrytes, minWeightMagnitude) {
+    return new Promise((res, rej) => {
+      this.setupSearch(transactionTrytes, minWeightMagnitude, res, rej);
     });
   }
 

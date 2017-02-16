@@ -3,12 +3,12 @@ import PearlDiver from './pearldiver'
 var pdInstance = new PearlDiver();
 
 export default {
-  pow: (t,m,c) => {
-    var p = pdInstance.search(t,m)
-    if(typeof c === 'function') {
-      p.then(c).catch(c)
+  pow: (trytes, minWeight, callback, error) => {
+    var powPromise = pdInstance.search(trytes, minWeight)
+    if(typeof callback === 'function') {
+      powPromise.then(callback).catch(error)
     }
-    return p;
+    return powPromise;
   },
   setOffset: (o) => pdInstance.setOffset(o),
   interrupt: () => pdInstance.interrupt(),
