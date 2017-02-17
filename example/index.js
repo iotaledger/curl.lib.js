@@ -15,7 +15,7 @@ function beep() {
 var logError = (err) => document.querySelector("#message").innerText += err;
 var hashResult = (transaction) => {
   var diff = (Date.now()-start)/1e3 ;
-  beep();
+  //beep();
   let transactionHash = new Int32Array(Const.HASH_LENGTH);
   let curlHash = new Curl();
   curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
@@ -23,10 +23,12 @@ var hashResult = (transaction) => {
   curlHash.squeeze(transactionHash);
   document.querySelector("#message").innerText += "\n\thashed mwm of " + minWeightMagnitude++ + " in " + diff + "s; hash:\n\t" + trytes(transactionHash);
   if(minWeightMagnitude < 19) {
-    start = Date.now();
-    curl.pow(trinaryString, minWeightMagnitude)
-        .then(hashResult)
-        .catch(logError)
+    setTimeout(() => {
+      start = Date.now();
+      curl.pow(trinaryString, minWeightMagnitude)
+          .then(hashResult)
+          .catch(logError)
+    }, 500);
   }
 };
 
@@ -41,7 +43,7 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
   document.querySelector("#message").innerText += "Original hash:\n\t" + trytes(checkHash);
   //console.log("Original hash:\n\t" + trytes(checkHash));
 
-  beep();
+  //beep();
   start = Date.now();
   curl.pow(trinaryString, minWeightMagnitude)//, hashResult, logError)
       .then(hashResult)
