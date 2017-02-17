@@ -22,14 +22,12 @@ var hashResult = (transaction) => {
   curlHash.absorb(trits(transaction));
   curlHash.squeeze(transactionHash);
   document.querySelector("#message").innerText += "\n\thashed mwm of " + minWeightMagnitude++ + " in " + diff + "s; hash:\n\t" + trytes(transactionHash);
-  if(minWeightMagnitude < 19) {
-    setTimeout(() => {
-      start = Date.now();
-      curl.pow(trinaryString, minWeightMagnitude)
-          .then(hashResult)
-          .catch(logError)
-    }, 500);
-  }
+  setTimeout(() => {
+    start = Date.now();
+    curl.pow(trinaryString, minWeightMagnitude)
+        .then(hashResult)
+        .catch(logError)
+  }, 500);
 };
 
 var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) myTrits[i] = Math.floor(Math.random() * 3) - 1};
