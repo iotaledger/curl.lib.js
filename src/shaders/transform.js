@@ -31,11 +31,11 @@ void transform() {
   int round;
   for(round = 0; round < 27; round++) {
     scratchpad = twist();
-    barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
+    //barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
     state.b = scratchpad.s;//sp_low[i];
     state.a = scratchpad.t;//sp_high[i];
     commit(state);
-    barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
+    //barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
   }
 }
 `

@@ -13,6 +13,7 @@ let imageSize= Math.floor(MAXIMAGESIZE / dim.x / texelSize ) * dim.x * texelSize
 dim.y = imageSize / dim.x / texelSize ;
 
 var pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && r;
+var inn = 0;
 
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
@@ -123,7 +124,7 @@ export default class PearlDiver {
     for(var i = 27; i-- > 0;) {
       this.context.run("twist");
     }
-    this.context.run("check", null, {n:"minWeightMagnitude", v: searchObject.mwm});
+    this.context.run("check", {n:"minWeightMagnitude", v: searchObject.mwm});
     this.context.run("col_check");
     if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 )
       requestAnimationFrame(() => this._WebGLSearch(searchObject));
@@ -142,7 +143,8 @@ export default class PearlDiver {
 
   _WebGLFindNonce(searchObject) {
     this._WebGLWriteBuffers(searchObject.states);
-    this.context.run("init", this.buf, {n: "gr_offset", v: this.offset});
+    this.context.writeData(this.buf);
+    this.context.run("init", {n: "gr_offset", v: this.offset});
     requestAnimationFrame(() => this._WebGLSearch(searchObject));
   }
 }

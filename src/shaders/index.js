@@ -10,7 +10,7 @@ import increment  from './increment'
 export default {
   init      : headers + add + init,
   increment : headers + add + increment,
-  transform : headers + barrier + twist,
+  transform : headers + twist,
   col_check : headers + check.col,
   check     : headers + check.do_check + check.k_check,
   finalize  : headers + check.do_check + finalize,

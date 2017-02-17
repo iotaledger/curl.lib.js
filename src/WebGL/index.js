@@ -3,10 +3,10 @@ import newBuffer from './newBuffer'
 import createTexture from './texture'
 import {vertexShaderCode, stdlib} from './shadercode'
 
-function _frameBufferSetup (gl, fbo, length, dim) {
+function _frameBufferSetTexture (gl, fbo, nTexture, dim) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
   // Types arrays speed this up tremendously.
-  var nTexture = createTexture(gl, new Int32Array(length), dim);
+  //var nTexture = createTexture(gl, new Int32Array(length), dim);
 
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
 
@@ -57,8 +57,8 @@ export default class {
     gl.bindVertexArray(null);
     this.vertexShader = this._createVertexShader(gl);
     this.framebuffer = gl.createFramebuffer();
-    _frameBufferSetup(gl, this.framebuffer, length, this.dim);
-    this.texture = createTexture(gl, this.ipt.data, this.dim);
+    this.texture0 = createTexture(gl, this.ipt.data, this.dim);
+    this.texture1 = createTexture(gl, null, this.dim);
   }
   _bindBuffers(gl) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
@@ -128,7 +128,7 @@ export default class {
   }
   use (name) {
   }
-  run (name, data, ...uniforms) {
+  run (name, ...uniforms) {
     let gl = this.gl;
     let info = this.programs.get(name);
     let program = info.program;
@@ -142,22 +142,24 @@ export default class {
     var uTexture = gl.getUniformLocation(program, 'u_texture');
     gl.useProgram(program);
 
+    gl.bindTexture(gl.TEXTURE_2D, this.texture0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(uTexture, 0);
 
     gl.viewport(0, 0, this.dim.x, this.dim.y);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    if(data != null)
-      this.writeData(data);
-    else
-      this.writeData(this.ipt.data);
-    gl.activeTexture(gl.TEXTURE0);
+    //gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer); // old
+    _frameBufferSetTexture(gl, this.framebuffer, this.texture1, this.dim); //new
     gl.bindVertexArray(this.vao);
-    gl.uniform1i(uTexture, 0);
     for(var u_v of uniforms) {
       gl.uniform1i(u_vars.get(u_v.n), u_v.v);
     }
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
+    //gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
+    // vv new
+    let tex0 = this.texture0;
+    this.texture0 = this.texture1;
+    this.texture1 = tex0;
+    // ^^ flip flop
 
     //gl.deleteTexture(this.texture);
     this._finishRun(gl);
@@ -171,13 +173,15 @@ export default class {
     M = M || this.dim.y;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     gl.readPixels(x, y, N, M, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
-    this._finishRun(gl);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return this.ipt.data.subarray(0, this.ipt.length);
   }
 
   writeData(data) {
     let gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, this.texture0);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I,this.dim.x,this.dim.y, 0, gl.RGBA_INTEGER, gl.INT, data);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   _finishRun (gl) {
