@@ -29,7 +29,7 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
 {
   var curlHash =  new Curl();
   curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
-  var minWeightMagnitude = 15;
+  var minWeightMagnitude = 17;
 
 
   curlHash.absorb(trits(trinaryString));
