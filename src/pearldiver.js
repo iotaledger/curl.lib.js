@@ -85,9 +85,9 @@ export default class PearlDiver {
       if(next != null) {
         this.state = "SEARCHING";
         this.findNonce(next);
-      } else {
-        this.state = "READY";
-      }
+      } 
+    } else {
+      this.state = "READY";
     }
   }
 
@@ -120,13 +120,12 @@ export default class PearlDiver {
       setTimeout(() => this._WebGLSearch(searchObject), 1);
     } else {
       this.context.run("finalize");
-      if(searchObject.call(
+      searchObject.call(
         this.context.readData()
         .reduce(pack(4), [])
         .slice(0, Const.HASH_LENGTH)
         .map(x => x[3]), 
-        searchObject)
-      )
+        searchObject);
       this.doNext();
     }
   }
