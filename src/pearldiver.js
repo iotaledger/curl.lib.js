@@ -4,7 +4,7 @@ import searchInit, {transform} from './searchInit'
 import KRNL from './shaders'
 import * as Const from './constants'
 
-let MAXIMAGESIZE = Math.pow(document.createElement('canvas').getContext('webgl2').MAX_TEXTURE_SIZE, 2) * 0.99;//was 1e6;
+let MAXIMAGESIZE = Math.pow(document.createElement('canvas').getContext('webgl2').MAX_TEXTURE_SIZE, 2) * 0.50;//was 1e6;
 let dim = {};
 let texelSize = 4;
 
@@ -119,32 +119,37 @@ export default class PearlDiver {
 
 
   _WebGLSearch(searchObject) {
-    if(this.state == "INTERRUPTED") return this._save(searchObject);
     this.context.run("increment");
-    for(var i = 27; i-- > 0;) {
-      this.context.run("twist");
-    }
-    this.context.run("check", {n:"minWeightMagnitude", v: searchObject.mwm});
+    this.context.run("twist", 27);
+    this.context.run("check", 1, {n:"minWeightMagnitude", v: searchObject.mwm});
     this.context.run("col_check");
     if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 )
-      requestAnimationFrame(() => this._WebGLSearch(searchObject));
+      //requestAnimationFrame(() => this._WebGLSearch(searchObject));
+      //setTimeout(() => this._WebGLSearch(searchObject), 1);
+      //this._WebGLSearch(searchObject);
+      return false;
     else {
-      this.context.run("finalize");
-      if(searchObject.call(
-        this.context.readData()
-        .reduce(pack(4), [])
-        .slice(0, Const.HASH_LENGTH)
-        .map(x => x[3]), 
-        searchObject)
-      )
-        this.doNext();
+      return true;
     }
   }
 
   _WebGLFindNonce(searchObject) {
     this._WebGLWriteBuffers(searchObject.states);
     this.context.writeData(this.buf);
-    this.context.run("init", {n: "gr_offset", v: this.offset});
-    requestAnimationFrame(() => this._WebGLSearch(searchObject));
+    this.context.run("init", 1, {n: "gr_offset", v: this.offset});
+    //requestAnimationFrame(() => this._WebGLSearch(searchObject));
+    while(this.state == "SEARCHING" && !this._WebGLSearch(searchObject)){
+      //console.log("next");
+    }
+    if(this.state == "INTERRUPTED") return this._save(searchObject);
+    this.context.run("finalize");
+    if(searchObject.call(
+      this.context.readData()
+      .reduce(pack(4), [])
+      .slice(0, Const.HASH_LENGTH)
+      .map(x => x[3]), 
+      searchObject)
+    )
+    this.doNext();
   }
 }

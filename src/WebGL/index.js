@@ -58,7 +58,7 @@ export default class {
     this.vertexShader = this._createVertexShader(gl);
     this.framebuffer = gl.createFramebuffer();
     this.texture0 = createTexture(gl, this.ipt.data, this.dim);
-    this.texture1 = createTexture(gl, null, this.dim);
+    this.texture1 = createTexture(gl, new Int32Array(length), this.dim);
   }
   _bindBuffers(gl) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texture);
@@ -128,7 +128,7 @@ export default class {
   }
   use (name) {
   }
-  run (name, ...uniforms) {
+  run (name, count, ...uniforms) {
     let gl = this.gl;
     let info = this.programs.get(name);
     let program = info.program;
@@ -142,26 +142,24 @@ export default class {
     var uTexture = gl.getUniformLocation(program, 'u_texture');
     gl.useProgram(program);
 
-    gl.bindTexture(gl.TEXTURE_2D, this.texture0);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.uniform1i(uTexture, 0);
+    count = count || 1;
+    while(count-- > 0) {
+      gl.bindTexture(gl.TEXTURE_2D, this.texture0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(uTexture, 0);
 
-    gl.viewport(0, 0, this.dim.x, this.dim.y);
-    //gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer); // old
-    _frameBufferSetTexture(gl, this.framebuffer, this.texture1, this.dim); //new
-    gl.bindVertexArray(this.vao);
-    for(var u_v of uniforms) {
-      gl.uniform1i(u_vars.get(u_v.n), u_v.v);
+      gl.viewport(0, 0, this.dim.x, this.dim.y);
+      _frameBufferSetTexture(gl, this.framebuffer, this.texture1, this.dim); //new
+      gl.bindVertexArray(this.vao);
+      for(var u_v of uniforms) {
+        gl.uniform1i(u_vars.get(u_v.n), u_v.v);
+      }
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+      let tex0 = this.texture0;
+      this.texture0 = this.texture1;
+      this.texture1 = tex0;
     }
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    //gl.readPixels(0, 0, this.dim.x, this.dim.y, gl.RGBA_INTEGER, gl.INT, this.ipt.data);
-    // vv new
-    let tex0 = this.texture0;
-    this.texture0 = this.texture1;
-    this.texture1 = tex0;
-    // ^^ flip flop
 
-    //gl.deleteTexture(this.texture);
     this._finishRun(gl);
   }
 
