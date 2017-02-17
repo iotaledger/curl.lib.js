@@ -1,4 +1,4 @@
-import pearlDiver from '../src'
+//import pearlDiver from '../src'
 import {trits, trytes} from "iota.lib.js/lib/crypto/converter"
 import Curl from "iota.lib.js/lib/crypto/curl"
 import * as Const from '../src/constants'
@@ -17,32 +17,30 @@ var hashResult = (transaction) => {
   start = Date.now();
   beep();
   let transactionHash = new Int32Array(Const.HASH_LENGTH);
-  let curl = new Curl();
-  curl.initialize(new Int32Array(Const.STATE_LENGTH));
-  curl.absorb(trits(transaction));
-  curl.squeeze(transactionHash);
+  let curlHash = new Curl();
+  curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
+  curlHash.absorb(trits(transaction));
+  curlHash.squeeze(transactionHash);
   console.log(" hashed mwm of " + minWeightMagnitude + " in " + diff + "s; hash:\n\t" + trytes(transactionHash));
 };
 
 var logError = (err) => console.log(err);
 var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) myTrits[i] = Math.floor(Math.random() * 3) - 1};
 {
-  var curl =  new Curl();
-  curl.initialize(new Int32Array(Const.STATE_LENGTH));
+  var curlHash =  new Curl();
+  curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
   var minWeightMagnitude = 15;
 
 
-  curl.absorb(trits(trinaryString));
-  curl.squeeze(checkHash);
+  curlHash.absorb(trits(trinaryString));
+  curlHash.squeeze(checkHash);
   console.log("Original hash:\n\t" + trytes(checkHash));
 
   beep();
   start = Date.now();
-  pearlDiver.pow(trinaryString, minWeightMagnitude, hashResult, logError)
-  /*
+  curl.pow(trinaryString, minWeightMagnitude)//, hashResult, logError)
       .then(hashResult)
       .catch(logError)
-      */
   /*
   setTimeout(() => {
     pearlDiver.interrupt();

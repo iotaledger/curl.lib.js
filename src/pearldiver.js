@@ -18,16 +18,7 @@ var inn = 0;
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
   return (hash, searchObject) => {
-    let newTransactionTrits = [...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash];
-    /*
-    let transactionHash = new Int32Array(Const.HASH_LENGTH);
-    let curl = new Curl();
-    curl.initialize(new Int32Array(Const.STATE_LENGTH));
-    curl.absorb(newTransactionTrits);
-    curl.squeeze(transactionHash);
-    //res([trytes(newTransactionTrits), trytes(transactionHash)]);
-    */
-    res(trytes(newTransactionTrits));
+    res(trytes([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]));
   }
 }
 
@@ -123,13 +114,20 @@ export default class PearlDiver {
     this.context.run("twist", 27);
     this.context.run("check", 1, {n:"minWeightMagnitude", v: searchObject.mwm});
     this.context.run("col_check");
-    if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 )
+    if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 ) {
+      if(this.state == "INTERRUPTED") return this._save(searchObject);
       //requestAnimationFrame(() => this._WebGLSearch(searchObject));
-      //setTimeout(() => this._WebGLSearch(searchObject), 1);
-      //this._WebGLSearch(searchObject);
-      return false;
-    else {
-      return true;
+      setTimeout(() => this._WebGLSearch(searchObject), 1);
+    } else {
+      this.context.run("finalize");
+      if(searchObject.call(
+        this.context.readData()
+        .reduce(pack(4), [])
+        .slice(0, Const.HASH_LENGTH)
+        .map(x => x[3]), 
+        searchObject)
+      )
+      this.doNext();
     }
   }
 
@@ -138,18 +136,6 @@ export default class PearlDiver {
     this.context.writeData(this.buf);
     this.context.run("init", 1, {n: "gr_offset", v: this.offset});
     //requestAnimationFrame(() => this._WebGLSearch(searchObject));
-    while(this.state == "SEARCHING" && !this._WebGLSearch(searchObject)){
-      //console.log("next");
-    }
-    if(this.state == "INTERRUPTED") return this._save(searchObject);
-    this.context.run("finalize");
-    if(searchObject.call(
-      this.context.readData()
-      .reduce(pack(4), [])
-      .slice(0, Const.HASH_LENGTH)
-      .map(x => x[3]), 
-      searchObject)
-    )
-    this.doNext();
+    setTimeout(() => this._WebGLSearch(searchObject), 1);
   }
 }
