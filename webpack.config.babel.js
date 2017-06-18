@@ -3,7 +3,7 @@ import path from 'path';
 module.exports = {
   entry: {
     example: './example/index.js',
-    worker: './example/worker.js',
+    //worker: './example/worker.js',
     curl: './src/index.js',
   },
   module: {

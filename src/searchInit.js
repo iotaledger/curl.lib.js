@@ -37,6 +37,32 @@ function setOffset(states) {
   states.high[3] = HIGH_3;
 }
 
+export function toPair(state) {
+  const states = {
+    low : new Int32Array(STATE_LENGTH),
+    high : new Int32Array(STATE_LENGTH)
+  }
+  let j;
+  for (j = 0; j < state.length; j++) {
+    switch (state[j++]) {
+      case 0: {
+        states.low[j] = HIGH_BITS;
+        states.high[j] = HIGH_BITS;
+      } break;
+      case 1: {
+        states.low[j] = LOW_BITS;
+        states.high[j] = HIGH_BITS;
+      } break;
+      default: {
+        states.low[j] = HIGH_BITS;
+        states.high[j] = LOW_BITS;
+      }
+    }
+  }
+  setOffset(states);
+  return states;
+}
+
 export function transform(states) {
   var scratchpadHigh, scratchpadLow
   var scratchpadIndex = 0, round, stateIndex;

@@ -1,6 +1,6 @@
 import {trits, trytes} from "iota.lib.js/lib/crypto/converter"
 import WebGL from './WebGL'
-import searchInit, {transform} from './searchInit'
+import searchInit, {transform, toPair} from './searchInit'
 import KRNL from './shaders'
 import * as Const from './constants'
 
@@ -18,7 +18,8 @@ var inn = 0;
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
   return (hash, searchObject) => {
-    res(trytes([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]));
+    //res(trytes([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]));
+    res(trytes(hash));
   }
 }
 
@@ -44,34 +45,39 @@ export default class PearlDiver {
 
   setOffset(o) { this.offset = o }
 
-  setupSearch(transactionTrytes, minWeightMagnitude, res, rej) {
-    let transactionTrits = trits(transactionTrytes);
-    if (this.context == null) rej(new Error("Webgl2 Is not Available"));
-    else if (transactionTrits.length != Const.TRANSACTION_LENGTH) rej(new Error("Incorrect Transaction Length"));
-    else if(minWeightMagnitude >= Const.HASH_LENGTH || minWeightMagnitude <= 0) rej(new Error("Bad Min-Weight Magnitude"));
-    else {
-      var states = {
-        low : new Int32Array(Const.STATE_LENGTH),
-        high : new Int32Array(Const.STATE_LENGTH)
-      };
-      searchInit(states, transactionTrits);
+  offset(state) {
+    return toPair(state);
+  }
 
-      this.queue.push({
-        states: states, 
-        mwm: minWeightMagnitude, 
-        call: pearlDiverCallback(res, transactionTrits, minWeightMagnitude, this)
-      });
-      if(this.state == "READY") this.doNext();
-    }
+  prepare(transactionTrytes, minWeightMagnitude) {
+    let transactionTrits = trits(transactionTrytes);
+    if (transactionTrits.length != Const.TRANSACTION_LENGTH) return null;
+    let states = {
+      low : new Int32Array(Const.STATE_LENGTH),
+      high : new Int32Array(Const.STATE_LENGTH)
+    };
+    searchInit(states, transactionTrits);
+    return states;
   }
 
   searchWithCallback(transactionTrytes, minWeightMagnitude, callback, err) {
-    this.setupSearch(transactionTrytes, minWeightMagnitude, callback, err);
+    const states = this.prepare(transactionTrytes, minWeightMagnitude);
+    this.search(states, minWeightMagnitude).then(callback).catch(err);
   }
 
-  search(transactionTrytes, minWeightMagnitude) {
+  search(states, minWeight) {
     return new Promise((res, rej) => {
-      this.setupSearch(transactionTrytes, minWeightMagnitude, res, rej);
+      if (this.context == null) rej(new Error("Webgl2 Is not Available"));
+      else if(minWeight >= Const.HASH_LENGTH || minWeight <= 0) rej(new Error("Bad Min-Weight Magnitude"));
+      //setupSearch(states, minWeight);
+
+      this.queue.push({
+        states: states, 
+        mwm: minWeight, 
+        call: pearlDiverCallback(res, states, minWeight, this)
+      });
+      console.log("starting!")
+      if(this.state == "READY") this.doNext();
     });
   }
 

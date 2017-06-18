@@ -14,20 +14,24 @@ function beep() {
 }
 var logError = (err) => document.querySelector("#message").innerText += err;
 var hashResult = (transaction) => {
-  var diff = (Date.now()-start)/1e3 ;
-  //beep();
-  let transactionHash = new Int32Array(Const.HASH_LENGTH);
-  let curlHash = new Curl();
-  curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
-  curlHash.absorb(trits(transaction));
-  curlHash.squeeze(transactionHash);
-  document.querySelector("#message").innerText += "\n\thashed mwm of " + minWeightMagnitude++ + " in " + diff + "s; hash:\n\t" + trytes(transactionHash);
-  setTimeout(() => {
-    start = Date.now();
-    curl.pow(trinaryString, minWeightMagnitude)
-        .then(hashResult)
-        .catch(logError)
-  }, 500);
+  return (hash) => {
+    var diff = (Date.now()-start)/1e3 ;
+    //beep();
+    let transactionHash = new Int32Array(Const.HASH_LENGTH);
+    let curlHash = new Curl();
+    curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
+    transaction = transaction.substr(0, 2673-81).concat(hash);
+    curlHash.absorb(trits(transaction));
+    curlHash.squeeze(transactionHash);
+    document.querySelector("#message").innerText += "\n\thashed mwm of " + minWeightMagnitude++ + " in " + diff + "s; hash:\n\t" + trytes(transactionHash);
+    //beep();
+    setTimeout(() => {
+      start = Date.now();
+      curl.pow({trytes: trinaryString, minWeight: minWeightMagnitude})
+          .then(hashResult (trinaryString))
+          .catch(logError)
+    }, 500);
+  }
 };
 
 var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) myTrits[i] = Math.floor(Math.random() * 3) - 1};
@@ -41,10 +45,9 @@ var randTrits = (myTrits) => {for(var i=0; i < Const.TRANSACTION_LENGTH; i++) my
   document.querySelector("#message").innerText += "Original hash:\n\t" + trytes(checkHash);
   //console.log("Original hash:\n\t" + trytes(checkHash));
 
-  //beep();
   start = Date.now();
-  curl.pow(trinaryString, minWeightMagnitude)//, hashResult, logError)
-      .then(hashResult)
+  curl.pow({trytes: trinaryString, minWeight: minWeightMagnitude})//, hashResult, logError)
+      .then(hashResult(trinaryString))
       .catch(logError)
   /*
   setTimeout(() => {
