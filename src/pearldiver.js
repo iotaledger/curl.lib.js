@@ -17,9 +17,9 @@ var inn = 0;
 
 function pearlDiverCallback (res, transactionTrits, minWeightMagnitude, m_self)
 {
-  return (hash, searchObject) => {
-    //res(trytes([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...hash]));
-    res(trytes(hash));
+  return (nonce, searchObject) => {
+    //res(trytes([...transactionTrits.slice(0,Const.TRANSACTION_LENGTH-Const.HASH_LENGTH), ...nonce]));
+    res(trytes(nonce));
   }
 }
 
