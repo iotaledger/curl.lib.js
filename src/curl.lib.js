@@ -6,7 +6,7 @@ export default {
   pow: (options, success, error) => {
     let state;
     if (options.trytes == null) {
-      state = pdInstance.offset(options.state);
+      state = pdInstance.offsetState(options.state);
       console.log("offset states");
     } else if (options.state == null) {
       state = pdInstance.prepare(options.trytes);

@@ -45,7 +45,7 @@ export default class PearlDiver {
 
   setOffset(o) { this.offset = o }
 
-  offset(state) {
+  offsetState(state) {
     return toPair(state);
   }
 
