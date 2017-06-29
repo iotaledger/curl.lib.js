@@ -15,8 +15,8 @@ An example of the usage of curl.lib.js:
 ```
 var curl = require('curl.lib.js');
 var trits = require('iota.lib.js/lib/crypto/converter').trits(myTryteString);
-var minWeightMagnitude = 18;
-curl.pow(trits, minWeightMagnitude)
+var minWeight = 18;
+curl.pow({trits, minWeight})
     .then((hash) =>{
         //do something with trits. it has been modified now
         console.log(trits);
