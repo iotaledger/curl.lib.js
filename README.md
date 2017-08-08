@@ -16,9 +16,8 @@ An example of the usage of curl.lib.js:
 var curl = require('curl.lib.js');
 var minWeight = 18;
 curl.pow({trytes: myTryteString, minWeight})
-    .then((hash) =>{
-        //do something with trits. it has been modified now
-        console.log(trits);
+    .then((nonce) =>{
+        console.log(myTryteString.substr(0, 2187-81).concat(nonce));
     }).catch((error) => {
         /*
          woops. 
@@ -32,7 +31,7 @@ curl.pow({trytes: myTryteString, minWeight})
 ```
 
 Available functions:
-* `pow(transactionTrytes<String>,  minWeightMagnitude<int 0 >= i > 243 >, [callback(<String newTransactionTrytes>), error(<String error message>)])` 
+* `pow({trytes, minWeight})` 
     * gets the proof-of-work on a transaction 
     * possible errors:
         * Webgl2 wasn't available
@@ -49,6 +48,8 @@ Available functions:
     * continues the proof-of-work that you just interrupted
 * `remove(void)` 
     * removes the proof-of-work job that you had previously queued
+* `overrideAttachToTangle(api)`
+    * overrides attachToTangle for iota.lib.js api object
 
 ### In Browser
 
