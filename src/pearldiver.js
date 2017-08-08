@@ -51,7 +51,7 @@ export default class PearlDiver {
 
   prepare(transactionTrytes, minWeightMagnitude) {
     let transactionTrits = trits(transactionTrytes);
-    if (transactionTrits.length != Const.TRANSACTION_LENGTH) return null;
+    if (transactionTrits.length < Const.TRANSACTION_LENGTH - Const.HASH_LENGTH) return null;
     let states = {
       low : new Int32Array(Const.STATE_LENGTH),
       high : new Int32Array(Const.STATE_LENGTH)
