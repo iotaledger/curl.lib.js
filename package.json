@@ -1,6 +1,6 @@
 {
   "name": "curl.lib.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WebGL2 Accelerated IOTA Proof of Work",
   "main": "lib/index.js",
   "directories": {
@@ -12,8 +12,7 @@
       "latest"
     ]
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "iota.lib.js": "^0.1.3",
     "babel-core": "^6.22.1",
@@ -30,10 +29,10 @@
     "webpack-dev-server": "^1.16.2"
   },
   "scripts": {
-      "compile": "gulp --harmony",
-      "prepublish": "npm run compile",
-      "test": "gulp --harmony test",
-      "server": "webpack-dev-server"
+    "compile": "gulp --harmony",
+    "prepublish": "npm run compile",
+    "test": "gulp --harmony test",
+    "server": "webpack-dev-server"
   },
   "repository": {
     "type": "git",
