@@ -21,12 +21,14 @@ let pow = (options, success, error) => {
   };
 
 let overrideAttachToTangle = function(api) {
-  api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, txTrytes, callback) {
-    let trytes = txTrytes.substr(0, 2673-81*3).concat(trunkTransaction).concat(branchTransaction);
-    var promise = pow({ trytes,minWeight})
-      .then((nonce) => callback(null, trytes.concat(nonce)))
-      .catch((err) => callback(err));
-    return promise;
+  api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, trytesArray, callback) {
+    trytesArray.map(txTrytes => {
+      let trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunkTransaction).concat(branchTransaction);
+      let promise = pow({ trytes,minWeight})
+        .then((nonce) => callback(null, trytes.concat(nonce)))
+        .catch((err) => callback(err));
+      return promise;
+    })
   }
 }
 
