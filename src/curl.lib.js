@@ -2,18 +2,7 @@ import PearlDiver from './pearldiver'
 
 let pdInstance = new PearlDiver();
 
-let overrideAttachToTangle = function(api) {
-  api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, txTrytes, callback) {
-    let trytes = txTrytes.substr(0, 2673-81*3).concat(trunkTransaction).concat(branchTransaction);
-    var promise = curl.pow({ trytes,minWeight})
-      .then((nonce) => callback(null, trytes.concat(nonce)))
-      .catch((err) => callback(err));
-    return promise;
-  }
-}
-
-export default {
-  pow: (options, success, error) => {
+let pow = (options, success, error) => {
     let state;
     if (options.trytes == null) {
       state = pdInstance.offsetState(options.state);
@@ -29,7 +18,20 @@ export default {
       powPromise.then(success).catch(error)
     }
     return powPromise;
-  }, 
+  };
+
+let overrideAttachToTangle = function(api) {
+  api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, txTrytes, callback) {
+    let trytes = txTrytes.substr(0, 2673-81*3).concat(trunkTransaction).concat(branchTransaction);
+    var promise = pow({ trytes,minWeight})
+      .then((nonce) => callback(null, trytes.concat(nonce)))
+      .catch((err) => callback(err));
+    return promise;
+  }
+}
+
+export default {
+  pow, 
   prepare: (trytes) => {
     pdInstance.prepare(trytes);
   },
