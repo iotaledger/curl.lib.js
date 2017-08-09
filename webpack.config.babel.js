@@ -3,8 +3,7 @@ import path from 'path';
 module.exports = {
   entry: {
     example: './example/index.js',
-    //worker: './example/worker.js',
-    curl: './src/index.js',
+    curl: ['babel-polyfill', './src/index.js'],
   },
   module: {
     loaders: [
@@ -13,7 +12,7 @@ module.exports = {
         exclude: /(node_modules|bower_components)/,
         loader: 'babel-loader',
         query: {
-          presets: ['es2015']
+          presets: ['es2015', "stage-0"]
         }
       }
     ],
