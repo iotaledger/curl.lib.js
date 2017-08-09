@@ -22,12 +22,23 @@ let pow = (options, success, error) => {
 
 let overrideAttachToTangle = function(api) {
   api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, trytesArray, callback) {
-    Promise.all(trytesArray.map(txTrytes => {
-      return new Promise(function(resolve, reject) {
+    var check = async (txTrytes) => {
+      return new Promise(function (resolve, reject) {
         let trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunkTransaction).concat(branchTransaction);
-        pow({ trytes,minWeight}).then((nonce) => resolve(trytes.concat(nonce)))
+        pow({ trytes,minWeight}).then((nonce) => {
+          resolve(trytes.concat(nonce))
+        })
       });
-    })).then(trytes => callback(null, trytes)).catch(err => callback(err));
+    }
+    (async() => {
+      var trytes = []
+      for(var txTrytes of trytesArray) {
+        var result = await check(txTrytes)
+        console.log('got PoW! ' + result);
+        trytes.push(result)
+      }
+      callback(null, trytes);
+    })()
   }
 }
 
