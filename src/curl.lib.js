@@ -1,5 +1,5 @@
 import PearlDiver from './pearldiver'
-import Curl from "iota.lib.js/lib/crypto/curl"
+import Curl from "./curl"
 import * as Const from './constants'
 import {trits, trytes} from "iota.lib.js/lib/crypto/converter"
 
