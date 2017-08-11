@@ -1,7 +1,7 @@
 import PearlDiver from './pearldiver'
 import Curl from "./curl"
 import * as Const from './constants'
-import {trits, trytes} from "iota.lib.js/lib/crypto/converter"
+import {trits as to_trits, trytes as to_trytes} from "iota.lib.js/lib/crypto/converter"
 
 let pdInstance = new PearlDiver();
 
@@ -43,10 +43,10 @@ let overrideAttachToTangle = function(api) {
         var result = await doWork(txTrytes)
         console.log('got PoW! ' + result);
         curl.initialize(new Int32Array(Const.STATE_LENGTH));
-        curl.absorb(trits(result));
+        curl.absorb(to_trits(result));
         curl.squeeze(hash);
         branch = trunk;
-        trunk = trytes(hash);
+        trunk = to_trytes(hash);
         trytes.push(result)
       }
       callback(null, trytes);
