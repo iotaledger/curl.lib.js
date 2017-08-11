@@ -98,4 +98,4 @@ Curl.prototype.transform = function() {
     }
 }
 
-export Curl
+export default Curl
