@@ -43,8 +43,9 @@ let overrideAttachToTangle = function(api) {
         var result = await doWork(txTrytes)
         console.log('got PoW! ' + result);
         curl.initialize(new Int32Array(Const.STATE_LENGTH));
-        curl.absorb(to_trits(result));
-        curl.squeeze(hash);
+        var resultTrits = to_trits(result);
+        curl.absorb(resultTrits, 0, resultTrits.length);
+        curl.squeeze(hash, 0, Const.HASH_LENGTH);
         branch = trunk;
         trunk = to_trytes(hash);
         trytes.push(result)
