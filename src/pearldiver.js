@@ -120,14 +120,15 @@ export default class PearlDiver {
     this.context.run("twist", 27);
     this.context.run("check", 1, {n:"minWeightMagnitude", v: searchObject.mwm});
     this.context.run("col_check");
-    if(this.context.readData(0,0, dim.x, dim.y)[dim.x * texelSize - 2] === -1 ) {
+    
+    if(this.context.readData(Const.STATE_LENGTH,0, 1, 1)[2] === -1 ) {
       if(this.state == "INTERRUPTED") return this._save(searchObject);
       //requestAnimationFrame(() => this._WebGLSearch(searchObject));
       setTimeout(() => this._WebGLSearch(searchObject), 1);
     } else {
       this.context.run("finalize");
       searchObject.call(
-        this.context.readData()
+        this.context.readData(0,0,dim.x,1)
         .reduce(pack(4), [])
         .slice(0, Const.HASH_LENGTH)
         .map(x => x[3]), 
