@@ -1,4 +1,4 @@
-export default `
+module.exports = `
 // Choose high != 0 if you want to barrier rg values, 0 if you want to barrier ba
 #define WAITNUM 2
 void barrier(ivec2 watch_coords, int high) {

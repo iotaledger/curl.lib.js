@@ -71,7 +71,7 @@ function loadObj(url, onload) {
   };
   xhr.send();
 };
-export {
+module.exports = {
 getShaderSource,
 createShader,
 createProgram,

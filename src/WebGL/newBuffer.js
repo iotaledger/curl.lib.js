@@ -1,4 +1,4 @@
-export default function (gl, data, f, e) {
+module.exports = function (gl, data, f, e) {
   var buf = gl.createBuffer();
 
   gl.bindBuffer((e || gl.ARRAY_BUFFER), buf);

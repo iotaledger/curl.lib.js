@@ -1,101 +1,98 @@
+const Const = require('./constants');
 
 /**
-**      Cryptographic related functions to IOTA's Curl (sponge function)
-**/
+ **      Cryptographic related functions to IOTA's Curl (sponge function)
+ **/
 
-function Curl() {
-
-    // truth table
-    this.truthTable = [1, 0, -1, 1, -1, 0, -1, 1, 0];
-    this.HASH_LENGTH = 243;
+function Curl(state) {
+  // truth table
+  this.truthTable = new Int8Array([1, 0, -1, 2, 1, -1, 0, 2, -1, 1, 0]);
+  this.HASH_LENGTH = Const.HASH_LENGTH;
+  this.initialize(state);
+  this.reset();
 }
 
 /**
-*   Initializes the state with 729 trits
-*
-*   @method initialize
-**/
+ *   Initializes the state with 729 trits
+ *
+ *   @method initialize
+ **/
 Curl.prototype.initialize = function(state, length) {
 
-    if (state) {
+  if (state) {
+    this.state = state;
+  } else {
+    this.state = new Int8Array(Const.STATE_LENGTH);
+  }
+}
 
-        this.state = state;
-
-    } else {
-
-        this.state = [];
-
-        for (var i = 0; i < 729; i++) {
-
-            this.state[i] = 0;
-
-        }
-    }
+Curl.prototype.reset = function() {
+  this.state.fill(0);
 }
 
 /**
-*   Sponge absorb function
-*
-*   @method absorb
-**/
+ *   Sponge absorb function
+ *
+ *   @method absorb
+ **/
 Curl.prototype.absorb = function(trits, offset, length) {
 
-    do {
+  do {
 
-        var i = 0;
-        var limit = (length < 243 ? length : 243);
+    var i = 0;
+    var limit = (length < Const.HASH_LENGTH ? length : Const.HASH_LENGTH);
 
-        while (i < limit) {
+    while (i < limit) {
 
-            this.state[i++] = trits[offset++];
-        }
+      this.state[i++] = trits[offset++];
+    }
 
-        this.transform();
+    this.transform();
 
-    } while (( length -= 243 ) > 0)
+  } while (( length -= Const.HASH_LENGTH ) > 0)
 
 }
 
 /**
-*   Sponge squeeze function
-*
-*   @method squeeze
-**/
+ *   Sponge squeeze function
+ *
+ *   @method squeeze
+ **/
 Curl.prototype.squeeze = function(trits, offset, length) {
 
-    do {
+  do {
 
-        var i = 0;
-        var limit = (length < 243 ? length : 243);
+    var i = 0;
+    var limit = (length < Const.HASH_LENGTH ? length : Const.HASH_LENGTH);
 
-        while (i < limit) {
+    while (i < limit) {
 
-            trits[offset++] = this.state[i++];
-        }
+      trits[offset++] = this.state[i++];
+    }
 
-        this.transform();
+    this.transform();
 
-    } while (( length -= 243 ) > 0)
+  } while (( length -= Const.HASH_LENGTH ) > 0)
 }
 
 /**
-*   Sponge transform function
-*
-*   @method transform
-**/
+ *   Sponge transform function
+ *
+ *   @method transform
+ **/
 Curl.prototype.transform = function() {
 
-    var stateCopy = [], index = 0;
+  var stateCopy = [], index = 0;
 
-    for (var round = 0; round < 27; round++) {
+  for (var round = 0; round < Const.NUMBER_OF_ROUNDS; round++) {
 
-        stateCopy = this.state.slice();
+    stateCopy = this.state.slice();
 
-        for (var i = 0; i < 729; i++) {
+    for (var i = 0; i < Const.STATE_LENGTH; i++) {
 
-            this.state[i] = this.truthTable[stateCopy[index] + stateCopy[index += (index < 365 ? 364 : -365)] * 3 + 4];
-        }
+      this.state[i] = this.truthTable[stateCopy[index] + (stateCopy[index += (index < 365 ? 364 : -365)] <<2) + 5];
     }
+  }
 }
 
-export default Curl
+module.exports = Curl;

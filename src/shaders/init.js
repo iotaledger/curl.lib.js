@@ -16,4 +16,4 @@ ivec4 offset() {
   }
 }
 `
-export default offset + k_init
+module.exports = offset + k_init

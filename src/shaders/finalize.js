@@ -1,4 +1,4 @@
-export default `
+module.exports = `
 void main() {
   init();
   ivec4 my_vec = read();

@@ -1,13 +1,13 @@
-import headers    from './headers'
-import finalize   from './finalize'
-import barrier    from './barrier'
-import twist      from './transform'
-import * as check from './check'
-import add        from './add'
-import init       from './init'
-import increment  from './increment'
+const headers    = require( './headers');
+const finalize   = require( './finalize');
+const barrier    = require( './barrier');
+const twist      = require( './transform');
+const check      = require( './check');
+const add        = require( './add');
+const init       = require( './init');
+const increment  = require( './increment');
 
-export default {
+module.exports = {
   init      : headers + add + init,
   increment : headers + add + increment,
   transform : headers + twist,

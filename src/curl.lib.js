@@ -1,69 +1,91 @@
-import PearlDiver from './pearldiver'
-import Curl from "./curl"
-import * as Const from './constants'
-import {trits as to_trits, trytes as to_trytes} from "iota.lib.js/lib/crypto/converter"
+const PearlDiver = require('./pearldiver');
+const Curl = require("./curl");
+const Const = require('./constants');
+const Converter = require('iota.crypto.js').converter;
+const NONCE_TIMESTAMP_LOWER_BOUND = 0;
+const NONCE_TIMESTAMP_UPPER_BOUND = Converter.fromValue(0xffffffffffffffff).length;
 
-let pdInstance = new PearlDiver();
+let pdInstance;
 
-let pow = (options, success, error) => {
-    let state;
-    if (options.trytes == null) {
-      state = pdInstance.offsetState(options.state);
-      console.log("offset states");
-    } else if (options.state == null) {
-      state = pdInstance.prepare(options.trytes);
-      console.log("prepared trytes");
-    } else {
-      error("Error: no trytes or state matrix provided");
-    }
-    let powPromise = pdInstance.search(state, options.minWeight)
-    if(typeof success === 'function') {
-      powPromise.then(success).catch(error)
-    }
-    return powPromise;
-  };
+const pow = (options, success, error) => {
+  let state;
+  if (options.trytes == null) {
+    state = PearlDiver.offsetState(options.state);
+  } else if (options.state == null) {
+    const curl = new Curl();
+    state = PearlDiver.prepare(options.trytes);
+  } else {
+    error("Error: no trytes or state matrix provided");
+  }
+  let powPromise = PearlDiver.search(pdInstance, state, options.minWeight)
+  if(typeof success === 'function') {
+    powPromise.then(success).catch(error)
+  }
+  return powPromise;
+};
 
-let overrideAttachToTangle = function(api) {
-  api.attachToTangle = function(trunkTransaction, branchTransaction, minWeight, trytesArray, callback) {
+const setTimestamp = (state) => {
+  const timestamp = state.subarray(Const.TIMESTAMP_START, Const.TIMESTAMP_LOWER_BOUND_START);
+  const upper = state.subarray(Const.TIMESTAMP_UPPER_BOUND_START, Const.NONCE_START);
+  timestamp.fill(0);
+  Converter.fromValue(Date.now()).forEach((v, i) => timestamp[i] = v);
+  state.subarray(Const.TIMESTAMP_LOWER_BOUND_START, Const.TIMESTAMP_UPPER_BOUND_START).fill(0);
+  upper.fill(0);
+  NONCE_TIMESTAMP_UPPER_BOUND.forEach((v,i) => upper[i] = v);
+}
+
+const overrideAttachToTangle = (api) => {
+  api.attachToTangle = (
+    trunkTransaction, 
+    branchTransaction, 
+    minWeight, 
+    trytesArray, 
+    callback
+  ) => {
     let branch = branchTransaction; 
     let trunk = trunkTransaction;
-    var doWork = async (txTrytes) => {
+    const curl = new Curl();
+    const hash = new Int8Array(Const.HASH_LENGTH);
+    var doWork = (txTrytes) => {
       return new Promise(function (resolve, reject) {
-        let trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunk).concat(branch);
-        pow({ trytes,minWeight}).then((nonce) => {
+        curl.reset();
+        const trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunk).concat(branch);
+        curl.absorb(Converter.trits(trytes), 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
+        setTimestamp(curl.state);
+        pow({ state: Converter.trytes(state), minWeight}).then((nonce) => {
           resolve(trytes.concat(nonce))
         })
       });
     }
-    (async() => {
-      var trytes = []
-      let curl = new Curl();
-      let hash = new Int32Array(Const.HASH_LENGTH);
-      for(var txTrytes of trytesArray) {
-        var result = await doWork(txTrytes)
-        console.log('got PoW! ' + result);
-        curl.initialize(new Int32Array(Const.STATE_LENGTH));
-        var resultTrits = to_trits(result);
-        curl.absorb(resultTrits, 0, resultTrits.length);
-        curl.squeeze(hash, 0, Const.HASH_LENGTH);
-        branch = trunk;
-        trunk = to_trytes(hash);
-        trytes.push(result)
+    var trytes = []
+    (function doNext(i) {
+      if(i == trytesArray.length) {
+        callback(null, trytes);
+      } else {
+        doWork(trytesArray[i]).then(function(result) {
+          console.log('result:', result);
+          var resultTrits = Converter.trits(result);
+          curl.reset();
+          curl.absorb(resultTrits, 0, resultTrits.length);
+          curl.squeeze(hash, 0, Const.HASH_LENGTH);
+          branch = trunk;
+          trunk = Converter.trytes(hash);
+          trytes.push(result)
+          doNext(i + 1);
+        }).catch(callback);
       }
-      callback(null, trytes);
-    })()
+    })(0);
   }
 }
 
-export default {
+module.exports = {
   pow,
-  prepare: (trytes) => {
-    pdInstance.prepare(trytes);
-  },
-  setOffset: (o) => pdInstance.setOffset(o),
-  interrupt: () => pdInstance.interrupt(),
-  resume: () => pdInstance.doNext(),
+  init: () => { pdInstance = PearlDiver.instance();},
+  prepare: PearlDiver.prepare,
+  setOffset: (o) => {pdInstance.offset = o},
+  interrupt: () => interrupt(pdInstance),
+  resume: () => PearlDiver.doNext(pdInstance),
   remove: () => pdInstance.queue.unshift(),
-  getHashRows: (c) => c(pdInstance.getHashCount()),
+  getHashRows: (c) => c(PearlDiver.getHashCount()),
   overrideAttachToTangle
 }

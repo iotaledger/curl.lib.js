@@ -29,7 +29,7 @@ void transform() {
   ivec2 scratchpad;
   ivec4 state = read();
   int round;
-  for(round = 0; round < 27; round++) {
+  for(round = 0; round < NUMBER_OF_ROUNDS; round++) {
     scratchpad = twist();
     //barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
     state.b = scratchpad.s;//sp_low[i];
@@ -40,4 +40,4 @@ void transform() {
 }
 `
 
-export default twist + twistMain
+module.exports = twist + twistMain

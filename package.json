@@ -2,39 +2,33 @@
   "name": "curl.lib.js",
   "version": "1.0.15",
   "description": "WebGL2 Accelerated IOTA Proof of Work",
-  "main": "dist/curl.min.js",
+  "main": "src/curl.lib.js",
   "directories": {
     "example": "example",
     "lib": "lib"
   },
-  "babel": {
-    "presets": [
-      "latest"
-    ]
+  "dependencies": {
+    "iota.crypto.js": "iotaledger/iota.crypto.js"
   },
-  "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.25.0",
-    "babel-loader": "^6.4.1",
-    "babel-polyfill": "^6.23.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-preset-stage-0": "^6.24.1",
-    "babel-preset-latest": "^6.22.0",
     "chai": "^3.5.0",
+    "eslint": "^4.5.0",
     "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
+    "gulp-eslint": "^4.0.0",
     "gulp-mocha": "^3.0.1",
+    "gulp-nsp": "^2.4.2",
     "gulp-util": "^3.0.8",
-    "iota.lib.js": "^0.1.3",
+    "iota.crypto.js": "iotaledger/iota.crypto.js",
     "mocha": "^3.2.0",
     "webpack": "^2.2.1",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.2",
+    "webpack-stream": "^4.0.0"
   },
   "scripts": {
     "compile": "gulp --harmony",
     "prepublish": "npm run compile",
     "test": "gulp --harmony test",
-    "server": "webpack-dev-server"
+    "dev": "webpack-dev-server"
   },
   "repository": {
     "type": "git",

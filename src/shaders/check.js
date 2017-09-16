@@ -1,4 +1,4 @@
-export let do_check = `
+module.exports = { do_check: `
 int check(int row, int min_weight_magnitude) {
   int nonce_probe, i;
   ivec2 r_texel;
@@ -10,8 +10,7 @@ int check(int row, int min_weight_magnitude) {
   }
   return nonce_probe;
 }
-`
-export let k_check = `
+`, k_check: `
 uniform int minWeightMagnitude;
 void main() {
   init();
@@ -22,8 +21,7 @@ void main() {
   }
   commit(my_vec);
 }
-`
-export let col = `
+`, col: `
 void main() {
   init();
   ivec4 my_vec = read();
@@ -46,3 +44,4 @@ void main() {
   commit(my_vec);
 }
 `
+}

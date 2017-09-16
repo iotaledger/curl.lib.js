@@ -1,3 +1,1 @@
-import curl from './curl.lib'
-
-window.curl = curl;
+window.curl = require('./curl.lib');

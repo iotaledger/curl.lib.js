@@ -1,4 +1,4 @@
-export default function () {
+module.exports = function () {
   var canvas = document.createElement('canvas');
   //var canvas = document.getElementById('c');
   var gl = null;

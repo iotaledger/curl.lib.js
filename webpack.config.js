@@ -1,19 +1,21 @@
-import path from 'path';
+const path = require('path');
 
 module.exports = {
   entry: {
     example: './example/index.js',
-    curl: ['babel-polyfill', './src/index.js'],
+    replay: './example/replay.js',
+    curl: './src/curl.lib.js',
   },
   module: {
     loaders: [
       {
         test: /\.js$/,
         exclude: /(node_modules|bower_components)/,
-        loader: 'babel-loader',
+        /*loader: 'babel-loader',
         query: {
           presets: ['es2015', "stage-0"]
         }
+        */
       }
     ],
   },

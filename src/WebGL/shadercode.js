@@ -1,5 +1,5 @@
-export 
-let vertexShaderCode =
+module.exports = {
+ vertexShaderCode:
   `#version 300 es
 layout(location = 0) in vec2 position;
 layout(location = 1) in vec2 texture;
@@ -9,7 +9,7 @@ void main(void) {
   pos = texture;
   gl_Position = vec4(position.xy, 0.0, 1.0);
 }`,
-  stdlib =
+  stdlib:
   `#version 300 es
 precision highp float;
 precision highp int;
@@ -39,4 +39,5 @@ ivec4 read_at(ivec2 coord) {
 void commit(ivec4 val) {
   color = val;
 }
-`
+`}
+

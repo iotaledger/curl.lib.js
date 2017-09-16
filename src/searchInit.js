@@ -1,6 +1,6 @@
-let HASH_LENGTH = 243,
+const Const = require('./constants')
+let 
   TRYTE_LENGTH = 2673,
-  STATE_LENGTH= 3 * HASH_LENGTH,
   TRANSACTION_LENGTH= TRYTE_LENGTH * 3,
   LOW_BITS= 0,//00000000,
   HIGH_BITS= -1,//0xFFFFFFFF,//FFFFFFFF,4294967295, 
@@ -26,53 +26,53 @@ let HASH_LENGTH = 243,
   */
 
 
-function setOffset(states) {
-  states.low [0] = LOW_0;
-  states.low [1] = LOW_1;
-  states.low [2] = LOW_2;
-  states.low [3] = LOW_3;
-  states.high[0] = HIGH_0;
-  states.high[1] = HIGH_1;
-  states.high[2] = HIGH_2;
-  states.high[3] = HIGH_3;
+function offset(states, offset) {
+  states.low [offset + 0] = LOW_0;
+  states.low [offset + 1] = LOW_1;
+  states.low [offset + 2] = LOW_2;
+  states.low [offset + 3] = LOW_3;
+  states.high[offset + 0] = HIGH_0;
+  states.high[offset + 1] = HIGH_1;
+  states.high[offset + 2] = HIGH_2;
+  states.high[offset + 3] = HIGH_3;
 }
 
-export function toPair(state) {
+function toPair(state) {
   const states = {
-    low : new Int32Array(STATE_LENGTH),
-    high : new Int32Array(STATE_LENGTH)
+    low : new Int32Array(Const.STATE_LENGTH),
+    high : new Int32Array(Const.STATE_LENGTH)
   }
-  let j;
-  for (j = 0; j < state.length; j++) {
-    switch (state[j++]) {
+  console.log(state);
+  state.forEach((trit, i) => {
+    switch (trit) {
       case 0: {
-        states.low[j] = HIGH_BITS;
-        states.high[j] = HIGH_BITS;
+        states.low[i] = HIGH_BITS;
+        states.high[i] = HIGH_BITS;
       } break;
       case 1: {
-        states.low[j] = LOW_BITS;
-        states.high[j] = HIGH_BITS;
+        states.low[i] = LOW_BITS;
+        states.high[i] = HIGH_BITS;
       } break;
       default: {
-        states.low[j] = HIGH_BITS;
-        states.high[j] = LOW_BITS;
+        states.low[i] = HIGH_BITS;
+        states.high[i] = LOW_BITS;
       }
     }
-  }
-  setOffset(states);
+  });
+  offset(states);
   return states;
 }
 
-export function transform(states) {
+function transform(states) {
   var scratchpadHigh, scratchpadLow
   var scratchpadIndex = 0, round, stateIndex;
   var alpha, beta, gamma, delta;
 
-  for (round = 27; round-- > 0; ) {
+  for (round = Const.NUMBER_OF_ROUNDS; round-- > 0; ) {
     scratchpadLow = states.low.slice();
     scratchpadHigh = states.high.slice();
 
-    for (stateIndex = 0; stateIndex < STATE_LENGTH; stateIndex++) {
+    for (stateIndex = 0; stateIndex < Const.STATE_LENGTH; stateIndex++) {
       alpha = scratchpadLow[scratchpadIndex];
       beta = scratchpadHigh[scratchpadIndex];
       gamma = scratchpadHigh[scratchpadIndex += (scratchpadIndex < 365 ? 364 : -365)];
@@ -84,38 +84,14 @@ export function transform(states) {
   }
 }
 
-function copyHashLength(states, transactionTrits, offset) {
-  for (var j = 0; j < HASH_LENGTH; j++) {
-    switch (transactionTrits[offset++]) {
-      case 0: {
-        states.low[j] = HIGH_BITS;
-        states.high[j] = HIGH_BITS;
-      } break;
-      case 1: {
-        states.low[j] = LOW_BITS;
-        states.high[j] = HIGH_BITS;
-      } break;
-      default: {
-        states.low[j] = HIGH_BITS;
-        states.high[j] = LOW_BITS;
-      }
-    }
-  }
-  return offset;
-}
-export default function /*searchInit*/(states, transactionTrits) {
+module.exports = { toPair, transform };
+/*
+export default function (states, transactionTrits) {
   var i, offset = 0;
-  /*
-  for (i = (TRANSACTION_LENGTH - HASH_LENGTH) / HASH_LENGTH; i-- > 0; ) {
-    offset = copyHashLength(states, transactionTrits, offset);
-    transform(states);
-  }
-  setOffset(states);
-  */
   var j;
   //for (i = HASH_LENGTH; i < STATE_LENGTH; i++) {
-  for (i = 0; i < STATE_LENGTH; i++) {
-    if (i >= HASH_LENGTH && i < STATE_LENGTH) {
+  for (i = 0; i < Const.STATE_LENGTH; i++) {
+    if (i >= Const.HASH_LENGTH && i < Const.STATE_LENGTH) {
       states.low[i] = HIGH_BITS;
       states.high[i] = HIGH_BITS;
     } else {
@@ -124,9 +100,9 @@ export default function /*searchInit*/(states, transactionTrits) {
     }
   }
 
-  for (i = (TRANSACTION_LENGTH - HASH_LENGTH) / HASH_LENGTH; i-- > 0; ) {
+  for (i = (Const.TRANSACTION_LENGTH - Const.HASH_LENGTH) / Const.HASH_LENGTH; i-- > 0; ) {
 
-    for (j = 0; j < HASH_LENGTH; j++) {
+    for (j = 0; j < Const.HASH_LENGTH; j++) {
       switch (transactionTrits[offset++]) {
         case 0: {
           states.low[j] = HIGH_BITS;
@@ -153,5 +129,4 @@ export default function /*searchInit*/(states, transactionTrits) {
   states.low[3] = LOW_3;   //0b1111111111000000000000000000000000000111111111111111111111111111L; 
   states.high[3] = HIGH_3; //0b0000000000111111111111111111111111111111111111111111111111111111L;
 }
-  /*
-  */
+*/
