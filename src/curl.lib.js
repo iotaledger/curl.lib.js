@@ -28,10 +28,10 @@ const setTimestamp = (state) => {
   const timestamp = state.subarray(Const.TIMESTAMP_START, Const.TIMESTAMP_LOWER_BOUND_START);
   const upper = state.subarray(Const.TIMESTAMP_UPPER_BOUND_START, Const.NONCE_START);
   timestamp.fill(0);
-  Converter.fromValue(Date.now()).forEach((v, i) => timestamp[i] = v);
+  Converter.fromValue(Date.now()).map((v, i) => timestamp[i] = v);
   state.subarray(Const.TIMESTAMP_LOWER_BOUND_START, Const.TIMESTAMP_UPPER_BOUND_START).fill(0);
   upper.fill(0);
-  NONCE_TIMESTAMP_UPPER_BOUND.forEach((v,i) => upper[i] = v);
+  NONCE_TIMESTAMP_UPPER_BOUND.map((v,i) => upper[i] = v);
 }
 
 const overrideAttachToTangle = (api) => {
