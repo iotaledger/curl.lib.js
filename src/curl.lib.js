@@ -58,7 +58,7 @@ const overrideAttachToTangle = (api) => {
       });
     }
     var trytes = []
-    (function doNext(i) {
+    function doNext(i) {
       if(i == trytesArray.length) {
         callback(null, trytes);
       } else {
@@ -74,7 +74,8 @@ const overrideAttachToTangle = (api) => {
           doNext(i + 1);
         }).catch(callback);
       }
-    })(0);
+    }
+    doNext(0);
   }
 }
 
