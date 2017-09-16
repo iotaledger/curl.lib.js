@@ -42,7 +42,6 @@ function toPair(state) {
     low : new Int32Array(Const.STATE_LENGTH),
     high : new Int32Array(Const.STATE_LENGTH)
   }
-  console.log(state);
   state.forEach((trit, i) => {
     switch (trit) {
       case 0: {
