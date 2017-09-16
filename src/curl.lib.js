@@ -3,7 +3,7 @@ const Curl = require("./curl");
 const Const = require('./constants');
 const Converter = require('iota.crypto.js').converter;
 const NONCE_TIMESTAMP_LOWER_BOUND = 0;
-const NONCE_TIMESTAMP_UPPER_BOUND = Converter.fromValue(0xffffffffffffffff).length;
+const NONCE_TIMESTAMP_UPPER_BOUND = Converter.fromValue(0xffffffffffffffff);
 
 let pdInstance;
 
