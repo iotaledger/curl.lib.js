@@ -52,7 +52,7 @@ const overrideAttachToTangle = (api) => {
         const trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunk).concat(branch);
         curl.absorb(Converter.trits(trytes), 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
         setTimestamp(curl.state);
-        pow({ state: Converter.trytes(state), minWeight}).then((nonce) => {
+        pow({ state: Converter.trytes(curl.state), minWeight}).then((nonce) => {
           resolve(trytes.concat(nonce))
         })
       });
