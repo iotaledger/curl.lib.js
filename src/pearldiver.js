@@ -26,18 +26,22 @@ const pearlDiverCallback = (res, transactionTrits, minWeightMagnitude, m_self) =
 const PearlDiverInstance = (offset) => {
   if(WebGL) {
     let instance = new Object();
-    instance.offset = dim.y * (offset || 0);
-    instance.context = WebGL.worker(IMAGE_SIZE, dim);
-    instance.buf = instance.context.ipt.data;
-    WebGL.addProgram(instance.context, "init", KRNL.init, "gr_offset");
-    WebGL.addProgram(instance.context, "increment", KRNL.increment);
-    WebGL.addProgram(instance.context, "twist", KRNL.transform);
-    WebGL.addProgram(instance.context, "check", KRNL.check, "minWeightMagnitude");
-    WebGL.addProgram(instance.context, "col_check", KRNL.col_check);
-    WebGL.addProgram(instance.context, "finalize", KRNL.finalize);
-    instance.state = "READY";
-    instance.queue = [];
-    return instance;
+    try {
+      instance.offset = dim.y * (offset || 0);
+      instance.context = WebGL.worker(IMAGE_SIZE, dim);
+      instance.buf = instance.context.ipt.data;
+      WebGL.addProgram(instance.context, "init", KRNL.init, "gr_offset");
+      WebGL.addProgram(instance.context, "increment", KRNL.increment);
+      WebGL.addProgram(instance.context, "twist", KRNL.transform);
+      WebGL.addProgram(instance.context, "check", KRNL.check, "minWeightMagnitude");
+      WebGL.addProgram(instance.context, "col_check", KRNL.col_check);
+      WebGL.addProgram(instance.context, "finalize", KRNL.finalize);
+      instance.state = "READY";
+      instance.queue = [];
+      return instance;
+    } catch(e) {
+      return null;
+    }
   }
 }
 
