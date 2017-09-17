@@ -82,7 +82,7 @@ const overrideAttachToTangle = (api) => {
 module.exports = {
   init: () => { 
     pdInstance = PearlDiver.instance(); 
-    return pdInstance;
+    return pdInstance == null;
   },
   pow,
   prepare: PearlDiver.prepare,
