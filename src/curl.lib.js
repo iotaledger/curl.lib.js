@@ -24,6 +24,9 @@ const pow = (options, success, error) => {
   return powPromise;
 };
 
+const TAG_TRINARY_START = 2295;
+const TAG_TRINARY_SIZE = 27;
+
 const setTimestamp = (state) => {
   const timestamp = state.subarray(Const.TIMESTAMP_START, Const.TIMESTAMP_LOWER_BOUND_START);
   const upper = state.subarray(Const.TIMESTAMP_UPPER_BOUND_START, Const.NONCE_START);
@@ -51,6 +54,8 @@ const overrideAttachToTangle = (api) => {
         curl.reset();
         const trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunk).concat(branch);
         curl.absorb(Converter.trits(trytes), 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
+        Converter.trits(txTrytes.substr(txTrytes.length-81, txTrytes.length)).forEach((v,i) => curl.state[i] = v);
+        Converter.trits(txTrytes.substr(TAG_TRINARY_START, TAG_TRINARY_START + TAG_TRINARY_SIZE)).forEach((v,i) => curl.state[i] = v);
         setTimestamp(curl.state);
         pow({ state: Converter.trytes(curl.state), minWeight}).then((nonce) => {
           resolve(trytes.concat(nonce))
