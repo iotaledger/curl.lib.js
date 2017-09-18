@@ -138,6 +138,7 @@ const prepare = (transactionTrytes, minWeightMagnitude) => {
   var curl = new Curl();
   let transactionTrits = Converter.trits(transactionTrytes);
   curl.absorb(transactionTrits, 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
+  transactionTrits.slice(Const.TRANSACTION_LENGTH - Const.HASH_LENGTH, Const.TRANSACTION_LENGTH).forEach((v,i) => { curl.state[i] = v; });
   states = SearchInit.toPair(curl.state);
   return states;
 }
