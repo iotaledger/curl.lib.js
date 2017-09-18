@@ -9,11 +9,10 @@ let pdInstance;
 
 const pow = (options, success, error) => {
   let state;
-  if (options.trytes == null) {
-    state = PearlDiver.offsetState(options.state);
-  } else if (options.state == null) {
-    const curl = new Curl();
+  if ('trytes' in options) {
     state = PearlDiver.prepare(options.trytes);
+  } else if ('state' in options) {
+    state = PearlDiver.offsetState(options.state);
   } else {
     error("Error: no trytes or state matrix provided");
   }
@@ -87,7 +86,10 @@ const overrideAttachToTangle = (api) => {
 module.exports = {
   init: () => { 
     pdInstance = PearlDiver.instance(); 
-    return pdInstance != null;
+    if(pdInstance == null) {
+      return false;
+    }
+    return true;
   },
   pow,
   prepare: PearlDiver.prepare,

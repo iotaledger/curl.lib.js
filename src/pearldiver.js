@@ -1,5 +1,4 @@
 const Converter = require('iota.crypto.js').converter;
-const trits = Converter.trits;
 const Curl = require("./curl");
 const WebGL = require('./WebGL');
 const SearchInit = require('./searchInit');
@@ -127,7 +126,7 @@ const _WebGLFindNonce = (instance, searchObject) => {
 const searchWithCallback = (instance, transactionTrytes, minWeightMagnitude, callback, err) => {
   if (transactionTrits.length < Const.TRANSACTION_LENGTH - Const.HASH_LENGTH) return null;
   var curl = new Curl();
-  let transactionTrits = trits(transactionTrytes);
+  let transactionTrits = Converter.trits(transactionTrytes);
   curl.absorb(transactionTrits, 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
   const states = SearchInit.toPair(curl.state, minWeightMagnitude);
   search(instance, states, minWeightMagnitude).then(callback).catch(err);
@@ -137,7 +136,7 @@ const offsetState = (state) => {
 }
 const prepare = (transactionTrytes, minWeightMagnitude) => {
   var curl = new Curl();
-  let transactionTrits = trits(transactionTrytes);
+  let transactionTrits = Converter.trits(transactionTrytes);
   curl.absorb(transactionTrits, 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
   states = SearchInit.toPair(curl.state);
   return states;
