@@ -58,7 +58,8 @@ function toPair(state) {
       }
     }
   });
-  offset(states);
+  offset(states, Const.NONCE_START);
+  console.log(states);
   return states;
 }
 

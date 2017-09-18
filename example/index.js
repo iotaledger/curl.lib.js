@@ -43,7 +43,7 @@ Pow.init();
 {
   var curlHash =  new Curl();
   curlHash.initialize(new Int32Array(Const.STATE_LENGTH));
-  var minWeightMagnitude = 9;
+  var minWeightMagnitude = 14;
 
   let the_trits = converter.trits(trinaryString);
   curlHash.absorb(the_trits, 0, the_trits.length);
@@ -57,10 +57,4 @@ Pow.init();
   Pow.pow({trytes: trinaryString, minWeight: minWeightMagnitude})//, hashResult, logError)
       .then(hashResult(trinaryString))
       .catch(logError)
-  /*
-  setTimeout(() => {
-    pearlDiver.interrupt();
-    setTimeout(() => {pearlDiver.resume()}, 100);
-  }, 100)
-  */
 }
