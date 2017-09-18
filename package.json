@@ -1,6 +1,6 @@
 {
   "name": "curl.lib.js",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "WebGL2 Accelerated IOTA Proof of Work",
   "main": "src/curl.lib.js",
   "directories": {
