@@ -7,6 +7,12 @@ const Const = require('./constants');
 
 const TEXELSIZE = 4;
 
+const PDState = {
+  READY: 0,
+  SEARCHING: 1,
+  INTERRUPTED: -1,
+};
+
 const pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && r;
 
 const pearlDiverCallback = (res, transactionTrits, minWeightMagnitude, m_self) => 
@@ -19,22 +25,18 @@ const pearlDiverCallback = (res, transactionTrits, minWeightMagnitude, m_self) =
 const PearlDiverInstance = (offset) => {
   if(WebGL) {
     let instance = new Object();
-    try {
-      instance.context = WebGL.worker(Const.STATE_LENGTH+1, TEXELSIZE);
-      instance.offset = instance.context.dim.y * (offset || 0);
-      instance.buf = instance.context.ipt.data;
-      WebGL.addProgram(instance.context, "init", KRNL.init, "gr_offset");
-      WebGL.addProgram(instance.context, "increment", KRNL.increment);
-      WebGL.addProgram(instance.context, "twist", KRNL.transform);
-      WebGL.addProgram(instance.context, "check", KRNL.check, "minWeightMagnitude");
-      WebGL.addProgram(instance.context, "col_check", KRNL.col_check);
-      WebGL.addProgram(instance.context, "finalize", KRNL.finalize);
-      instance.state = "READY";
-      instance.queue = [];
-      return instance;
-    } catch(e) {
-      return null;
-    }
+    instance.context = WebGL.worker(Const.STATE_LENGTH+1, TEXELSIZE);
+    instance.offset = instance.context.dim.y * (offset || 0);
+    instance.buf = instance.context.ipt.data;
+    WebGL.addProgram(instance.context, "init", KRNL.init, "gr_offset");
+    WebGL.addProgram(instance.context, "increment", KRNL.increment);
+    WebGL.addProgram(instance.context, "twist", KRNL.transform);
+    WebGL.addProgram(instance.context, "check", KRNL.check, "minWeightMagnitude");
+    WebGL.addProgram(instance.context, "col_check", KRNL.col_check);
+    WebGL.addProgram(instance.context, "finalize", KRNL.finalize);
+    instance.state = PDState.READY;
+    instance.queue = [];
+    return instance;
   }
 }
 
@@ -50,23 +52,23 @@ const search = (instance, states, minWeight) =>{
       mwm: minWeight, 
       call: pearlDiverCallback(res, states, minWeight, instance)
     });
-    if(instance.state == "READY") doNext(instance);
+    if(instance.state == PDState.READY) doNext(instance);
   });
 }
 
 const interrupt = (instance) => {
-  if(instance.state == "SEARCHING") instance.state = "INTERRUPTED";
+  if(instance.state == PDState.SEARCHING) instance.state = PDState.INTERRUPTED;
 }
 
 const doNext = (instance) => {
   var next = instance.queue.shift();
-  if(instance.state != "SEARCHING") {
+  if(instance.state != PDState.SEARCHING) {
     if(next != null) {
-      instance.state = "SEARCHING";
+      instance.state = PDState.SEARCHING;
       _WebGLFindNonce(instance, next);
     } 
   } else {
-    instance.state = "READY";
+    instance.state = PDState.READY;
   }
 }
 
@@ -95,7 +97,7 @@ const _WebGLSearch = (instance, searchObject) => {
   WebGL.run(instance.context, "col_check");
 
   if(WebGL.readData(instance.context, Const.STATE_LENGTH,0, 1, 1)[2] === -1 ) {
-    if(instance.state == "INTERRUPTED") return instance._save(searchObject);
+    if(instance.state == PDState.INTERRUPTED) return instance._save(searchObject);
     //requestAnimationFrame(() => instance._WebGLSearch(searchObject));
     setTimeout(() => _WebGLSearch(instance, searchObject), 1);
   } else {
