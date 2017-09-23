@@ -41,7 +41,7 @@ Available functions:
     * sets an offset to start pow search from
     * useful for amortized proof of work
 * `getHashCount()`
-    * returns the number of concurrent hash rows copmleted by this worker
+    * returns the number of concurrent hash rows completed by this worker
 * `interrupt(void)` 
     * interrupts the currently running proof-of-work function
 * `resume(void)` 
