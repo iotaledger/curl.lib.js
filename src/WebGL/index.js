@@ -77,11 +77,22 @@ const _finishRun  = (gl) => {
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
-const WebGLWorker = (length, dim) => {
+const WebGLWorker = (l, s) => {
+
   let worker = new Object();
   worker.gl = initGL();
   let gl = worker.gl;
-  worker.dim = dim;
+
+  worker.dim = {
+    x: l,
+    y: 0
+  };
+  const MAXIMAGESIZE = Math.pow(gl.MAX_TEXTURE_SIZE, 2) * 0.50;
+  const IMAGE_SIZE= Math.floor(MAXIMAGESIZE / worker.dim.x / s ) * worker.dim.x * s;
+  worker.dim.y = IMAGE_SIZE / worker.dim.x / s ;
+  let length = IMAGE_SIZE;
+
+
   worker.programs = new Map();
   worker.ipt = alloc(length);
 

@@ -97,6 +97,6 @@ module.exports = {
   interrupt: () => interrupt(pdInstance),
   resume: () => PearlDiver.doNext(pdInstance),
   remove: () => pdInstance.queue.unshift(),
-  getHashRows: (c) => c(PearlDiver.getHashCount()),
+  //getHashRows: (c) => c(PearlDiver.getHashCount()),
   overrideAttachToTangle
 }

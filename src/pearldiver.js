@@ -5,13 +5,7 @@ const SearchInit = require('./searchInit');
 const KRNL = require('./shaders');
 const Const = require('./constants');
 
-const MAXIMAGESIZE = Math.pow(document.createElement('canvas').getContext('webgl2').MAX_TEXTURE_SIZE, 2) * 0.50;
-let dim = {};
 const TEXELSIZE = 4;
-
-dim.x = Const.STATE_LENGTH+1;
-const IMAGE_SIZE= Math.floor(MAXIMAGESIZE / dim.x / TEXELSIZE ) * dim.x * TEXELSIZE;//DIM.X*TEXELSIZE*2;
-dim.y = IMAGE_SIZE / dim.x / TEXELSIZE ;
 
 const pack = (l) => (r,k,i) => (i%l ===0 ? r.push([k]): r[r.length-1].push(k)) && r;
 
@@ -26,8 +20,8 @@ const PearlDiverInstance = (offset) => {
   if(WebGL) {
     let instance = new Object();
     try {
-      instance.offset = dim.y * (offset || 0);
-      instance.context = WebGL.worker(IMAGE_SIZE, dim);
+      instance.context = WebGL.worker(Const.STATE_LENGTH+1, TEXELSIZE);
+      instance.offset = instance.context.dim.y * (offset || 0);
       instance.buf = instance.context.ipt.data;
       WebGL.addProgram(instance.context, "init", KRNL.init, "gr_offset");
       WebGL.addProgram(instance.context, "increment", KRNL.increment);
@@ -107,7 +101,7 @@ const _WebGLSearch = (instance, searchObject) => {
   } else {
     WebGL.run(instance.context, "finalize");
     searchObject.call(
-      WebGL.readData(instance.context, 0,0,dim.x,1)
+      WebGL.readData(instance.context, 0,0,instance.context.dim.x,1)
       .reduce(pack(4), [])
       .slice(0, Const.HASH_LENGTH)
       .map(x => x[3]), 
@@ -145,7 +139,6 @@ const prepare = (transactionTrytes, minWeightMagnitude) => {
 
 module.exports = {
   instance: PearlDiverInstance,
-  getHashCount: () => { return dim.y; },
   offsetState,
   prepare,
   search,

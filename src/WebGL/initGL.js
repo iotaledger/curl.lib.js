@@ -8,8 +8,9 @@ module.exports = function () {
   gl = canvas.getContext("webgl2", attr) || canvas.getContext("experimental-webgl2", attr);
 
   // If we don't have a GL context, give up now
-  if (!gl)
-    throw new Error("turbojs: Unable to initialize WebGL. Your browser may not support it.");
+ if (!gl) { // gl instanceof WebGLRenderingContext)
+    throw new Error("Unable to initialize WebGL. Your browser may not support it.");
+ }
 
   return gl;
 }
