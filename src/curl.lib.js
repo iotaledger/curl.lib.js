@@ -4,11 +4,13 @@ const Const = require('./constants');
 const Converter = require('iota.crypto.js').converter;
 const NONCE_TIMESTAMP_LOWER_BOUND = 0;
 const NONCE_TIMESTAMP_UPPER_BOUND = Converter.fromValue(0xffffffffffffffff);
+const MAX_TIMESTAMP_VALUE = (Math.pow(3,27) - 1) / 2 
 
 let pdInstance;
 
-const pow = (options, success, error) => {
+const pow = (options, success, error) => {  
   let state;
+
   if ('trytes' in options) {
     state = PearlDiver.prepare(options.trytes);
   } else if ('state' in options) {
@@ -41,9 +43,10 @@ const overrideAttachToTangle = iota => {
     trunkTransaction,
     branchTransaction,
     minWeight,
-    trytesArray,
+    trytes,
     callback
   ) => {
+  const ccurlHashing = function(trunkTransaction, branchTransaction, minWeight, trytes, callback) {
     const iotaObj = iota
 
     // inputValidator: Check if correct hash
@@ -57,7 +60,7 @@ const overrideAttachToTangle = iota => {
     }
 
     // inputValidator: Check if int
-    if (!iotaObj.valid.isValue(minWeightMagnitude)) {
+    if (!iotaObj.valid.isValue(minWeight)) {
       return callback(new Error("Invalid minWeightMagnitude"))
     }
 
@@ -118,7 +121,7 @@ const overrideAttachToTangle = iota => {
       var newTrytes = iotaObj.utils.transactionTrytes(txObject)
 
       curl
-        .pow({ trytes: newTrytes, minWeight: minWeightMagnitude })
+        .pow({ trytes: newTrytes, minWeight: minWeight })
         .then(function(nonce) {
           var returnedTrytes = newTrytes.substr(0, 2673 - 81).concat(nonce)
           var newTxObject = iotaObj.utils.transactionObject(returnedTrytes)
@@ -133,6 +136,19 @@ const overrideAttachToTangle = iota => {
         .catch(callback)
     }
     loopTrytes()
+  }
+  ccurlHashing(trunkTransaction, branchTransaction, minWeight, trytes, function(error, success) {
+    if (error) {
+        console.log(error);
+    } else {
+        console.log(success);
+    }
+    if (callback) {
+        return callback(error, success);
+    } else {
+        return success;
+    }
+  })
   }
 }
 
