@@ -36,54 +36,107 @@ const setTimestamp = (state) => {
   NONCE_TIMESTAMP_UPPER_BOUND.map((v,i) => upper[i] = v);
 }
 
-const overrideAttachToTangle = (api) => {
-  api.attachToTangle = (
-    trunkTransaction, 
-    branchTransaction, 
-    minWeight, 
-    trytesArray, 
+const overrideAttachToTangle = iota => {
+  iota.api.attachToTangle = (
+    trunkTransaction,
+    branchTransaction,
+    minWeight,
+    trytesArray,
     callback
   ) => {
-    let branch = branchTransaction; 
-    let trunk = trunkTransaction;
-    const curl = new Curl();
-    const hash = new Int8Array(Const.HASH_LENGTH);
-    var doWork = (txTrytes) => {
-      return new Promise(function (resolve, reject) {
-        curl.reset();
-        const trytes = txTrytes.substr(0, txTrytes.length-81*3).concat(trunk).concat(branch);
-        curl.absorb(Converter.trits(trytes), 0, Const.TRANSACTION_LENGTH - Const.HASH_LENGTH);
-        Converter.trits(txTrytes.substr(txTrytes.length-81, txTrytes.length)).forEach((v,i) => curl.state[i] = v);
-        Converter.trits(txTrytes.substr(TAG_TRINARY_START, TAG_TRINARY_START + TAG_TRINARY_SIZE)).forEach((v,i) => curl.state[i] = v);
-        setTimestamp(curl.state);
-        pow({ state: Converter.trytes(curl.state), minWeight}).then((nonce) => {
-          resolve(trytes.concat(nonce))
-        })
-      });
+    const iotaObj = iota
+
+    // inputValidator: Check if correct hash
+    if (!iotaObj.valid.isHash(trunkTransaction)) {
+      return callback(new Error("Invalid trunkTransaction"))
     }
-    var trytes = []
-    function doNext(i) {
-      if(i == trytesArray.length) {
-        callback(null, trytes);
+
+    // inputValidator: Check if correct hash
+    if (!iotaObj.valid.isHash(branchTransaction)) {
+      return callback(new Error("Invalid branchTransaction"))
+    }
+
+    // inputValidator: Check if int
+    if (!iotaObj.valid.isValue(minWeightMagnitude)) {
+      return callback(new Error("Invalid minWeightMagnitude"))
+    }
+
+    var finalBundleTrytes = []
+    var previousTxHash
+    var i = 0
+
+    function loopTrytes() {
+      getBundleTrytes(trytes[i], function(error) {
+        if (error) {
+          return callback(error)
+        } else {
+          i++
+          if (i < trytes.length) {
+            loopTrytes()
+          } else {
+            // reverse the order so that it's ascending from currentIndex
+            return callback(null, finalBundleTrytes.reverse())
+          }
+        }
+      })
+    }
+
+    function getBundleTrytes(thisTrytes, callback) {
+      // PROCESS LOGIC:
+      // Start with last index transaction
+      // Assign it the trunk / branch which the user has supplied
+      // IF there is a bundle, chain  the bundle transactions via
+      // trunkTransaction together
+
+      var txObject = iotaObj.utils.transactionObject(thisTrytes)
+      txObject.tag = txObject.obsoleteTag
+      txObject.attachmentTimestamp = Date.now()
+      txObject.attachmentTimestampLowerBound = 0
+      txObject.attachmentTimestampUpperBound = MAX_TIMESTAMP_VALUE
+      // If this is the first transaction, to be processed
+      // Make sure that it's the last in the bundle and then
+      // assign it the supplied trunk and branch transactions
+      if (!previousTxHash) {
+        // Check if last transaction in the bundle
+        if (txObject.lastIndex !== txObject.currentIndex) {
+          return callback(
+            new Error(
+              "Wrong bundle order. The bundle should be ordered in descending order from currentIndex"
+            )
+          )
+        }
+
+        txObject.trunkTransaction = trunkTransaction
+        txObject.branchTransaction = branchTransaction
       } else {
-        doWork(trytesArray[i]).then(function(result) {
-          console.log('result:', result);
-          var resultTrits = Converter.trits(result);
-          curl.reset();
-          curl.absorb(resultTrits, 0, resultTrits.length);
-          curl.squeeze(hash, 0, Const.HASH_LENGTH);
-          branch = trunk;
-          trunk = Converter.trytes(hash);
-          trytes.push(result)
-          doNext(i + 1);
-        }).catch(callback);
+        // Chain the bundle together via the trunkTransaction (previous tx in the bundle)
+        // Assign the supplied trunkTransaciton as branchTransaction
+        txObject.trunkTransaction = previousTxHash
+        txObject.branchTransaction = trunkTransaction
       }
+
+      var newTrytes = iotaObj.utils.transactionTrytes(txObject)
+
+      curl
+        .pow({ trytes: newTrytes, minWeight: minWeightMagnitude })
+        .then(function(nonce) {
+          var returnedTrytes = newTrytes.substr(0, 2673 - 81).concat(nonce)
+          var newTxObject = iotaObj.utils.transactionObject(returnedTrytes)
+
+          // Assign the previousTxHash to this tx
+          var txHash = newTxObject.hash
+          previousTxHash = txHash
+
+          finalBundleTrytes.push(returnedTrytes)
+          callback(null)
+        })
+        .catch(callback)
     }
-    doNext(0);
+    loopTrytes()
   }
 }
 
-module.exports = {
+window.curl = module.exports = {
   init: () => { 
     pdInstance = PearlDiver.instance(); 
     if(pdInstance == null) {
