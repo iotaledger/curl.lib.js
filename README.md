@@ -5,7 +5,7 @@ IOTA Proof-of-Work algorithm ported to Javascript to work in WebGL2-enabled brow
 
 ```
 npm install
-npm run compile
+npm run build
 ```
 
 ## usage
@@ -48,8 +48,8 @@ Available functions:
     * continues the proof-of-work that you just interrupted
 * `remove(void)` 
     * removes the proof-of-work job that you had previously queued
-* `overrideAttachToTangle(api)`
-    * overrides attachToTangle for iota.lib.js api object
+* `overrideAttachToTangle(iota)`
+    * overrides attachToTangle for iota.lib.js object
 
 ### In Browser
 
