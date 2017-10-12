@@ -8,7 +8,11 @@
     "lib": "lib"
   },
   "dependencies": {
-    "iota.crypto.js": "iotaledger/iota.crypto.js"
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "iota.crypto.js": "github:iotaledger/iota.crypto.js",
+    "loader-utils": "^1.1.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
@@ -25,19 +29,15 @@
     "webpack-stream": "^4.0.0"
   },
   "scripts": {
-    "compile": "gulp --harmony",
-    "prepublish": "npm run compile",
     "test": "gulp --harmony test",
-    "dev": "webpack-dev-server"
+    "dev": "webpack-dev-server",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iotaledger/curl.lib.js.git"
   },
-  "keywords": [
-    "iota",
-    "webgl2"
-  ],
+  "keywords": ["iota", "webgl2"],
   "author": "Paul Handy (paul@pauldhandy.com)",
   "license": "GPL-3.0",
   "bugs": {
