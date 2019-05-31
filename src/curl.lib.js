@@ -4,11 +4,16 @@ const Const = require('./constants');
 const Converter = require('iota.crypto.js').converter;
 const NONCE_TIMESTAMP_LOWER_BOUND = 0;
 const NONCE_TIMESTAMP_UPPER_BOUND = Converter.fromValue(0xffffffffffffffff);
-const MAX_TIMESTAMP_VALUE = (Math.pow(3,27) - 1) / 2 
+const MAX_TIMESTAMP_VALUE = (Math.pow(3,27) - 1) / 2
 
 let pdInstance;
+let onProgress;
 
-const pow = (options, success, error) => {  
+const setOnProgress = (fn) => {
+  onProgress = fn;
+}
+
+const pow = (options, success, error) => {
   let state;
 
   if ('trytes' in options) {
@@ -74,6 +79,9 @@ const overrideAttachToTangle = iota => {
           return callback(error)
         } else {
           i++
+          if(typeof onProgress !== 'undefined') {
+            onProgress(i);
+          }
           if (i < trytes.length) {
             loopTrytes()
           } else {
@@ -153,13 +161,14 @@ const overrideAttachToTangle = iota => {
 }
 
 window.curl = module.exports = {
-  init: () => { 
-    pdInstance = PearlDiver.instance(); 
+  init: () => {
+    pdInstance = PearlDiver.instance();
     if(pdInstance == null) {
       return false;
     }
     return true;
   },
+  setOnProgress,
   pow,
   prepare: PearlDiver.prepare,
   setOffset: (o) => {pdInstance.offset = o},
